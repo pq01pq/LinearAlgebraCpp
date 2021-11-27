@@ -8,7 +8,7 @@ namespace linalg {
 	class Matrixx;
 	class Roww;
 	class Vectorr;
-	class Celll;
+	//class Celll;
 	class Allocatable;
 	class Allocator;
 
@@ -30,10 +30,10 @@ namespace linalg {
 		virtual void allocate(const int sequence, const double value) {};
 	};
 
-	class Matrixx : public Allocatable {
+	class Matrixx : private Allocatable {
 		friend class Roww;
 		friend class Vectorr;
-		friend class Celll;
+		//friend class Celll;
 	public:
 		Matrixx(int height, int width);
 		Matrixx(const Matrixx& copyMatrix);
@@ -41,12 +41,14 @@ namespace linalg {
 
 		Roww& operator[](int row);
 		const Roww& operator[](int row) const;
+		double& operator()(int row, int col) const;
 
 		Allocator& operator<<(const double value);
 		
-
 		const int getHeight() const;
 		const int getWidth() const;
+
+		const std::string str() const;
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
@@ -60,10 +62,10 @@ namespace linalg {
 		};
 	};
 
-	class Roww : public Allocatable {
+	class Roww : private Allocatable {
 		friend class Matrixx;
 		friend class Vectorr;
-		friend class Celll;
+		//friend class Celll;
 	public:
 		Roww() = default;
 		explicit Roww(int width);
@@ -71,56 +73,68 @@ namespace linalg {
 		~Roww();
 		
 
-		Celll& operator[](int col);
-		const Celll& operator[](int col) const;
+		double& operator[](int col);
+		const double& operator[](int col) const;
+
+		Allocator& operator<<(const double value);
 
 		const int getWidth() const;
+
+		const std::string str() const;
+	protected:
+		virtual void allocate(const int sequence, const double value) override;
 	private:
-		Celll* cells;
+		double* cells;
 		int width;
 
 		void init(int width);
 	};
 
-	class Vectorr : public Allocatable {
+	class Vectorr : private Allocatable {
 		friend class Matrixx;
 		friend class Roww;
-		friend class Celll;
+		//friend class Celll;
 	public:
 		Vectorr() = default;
 		explicit Vectorr(int height);
 		Vectorr(const Vectorr& copyVector);
 		~Vectorr();
 
-		Celll& operator[](int row);
-		const Celll& operator[](int row) const;
+		double& operator[](int row);
+		const double& operator[](int row) const;
+
+		Allocator& operator<<(const double value);
 		
 		const int getHeight() const;
+
+		const std::string str() const;
+	protected:
+		virtual void allocate(const int sequence, const double value) override;
 	private:
-		Celll* cells;
+		double* cells;
 		int height;
 
 		void init(int height);
 	};
 
-	class Celll {
-		friend class Matrixx;
-		friend class Roww;
-		friend class Vectorr;
-	public:
-		Celll() = default;
-		Celll(double value);
-		//Celll(const Celll& copyCell);
-		~Celll();
+	//class Celll {
+	//	friend class Matrixx;
+	//	friend class Roww;
+	//	friend class Vectorr;
+	//public:
+	//	Celll() = default;
+	//	Celll(double value);
+	//	//Celll(const Celll& copyCell);
+	//	~Celll();
 
-		operator double() const;
-		//Celll& operator=(const Celll& rightCell);
+	//	operator double() const;
+	//	//Celll& operator=(const Celll& rightCell);
 
-		void set(double value);
-		const double get() const;
-	private:
-		double value;
-	};
+	//	void set(double value);
+	//	const double get() const;
+	//private:
+	//	double value;
+	//};
 
 	
 

@@ -66,5 +66,9 @@ int main()
 		1, 2, 3,
 		4, 5, 6,
 		7, 8, 9;
-	cout << matrix[0][0] << " " << matrix[1][1] << " " << matrix[2][2] << endl;
+	cout << matrix.str() << endl;
+
+	Vectorr vector(5);
+	vector << 1, 2, 3, 4, 5;
+	cout << vector.str();
 }
