@@ -1,8 +1,7 @@
 #pragma once
 #include <iostream>
+#include <ostream>
 #include <string>
-#include <vector>
-#include <memory>
 
 namespace linalg {
 	class Matrixx;
@@ -43,16 +42,22 @@ namespace linalg {
 		const Roww& operator[](int row) const;
 		double& operator()(int row, int col) const;
 
+		Matrixx operator+() const;
+		Matrixx operator-() const;
+
 		Allocator& operator<<(const double value);
 
 		Matrixx& operator=(const Matrixx& rightMatrix);
+		Matrixx& operator+=(const Matrixx& rightMatrix);
+		Matrixx& operator-=(const Matrixx& rightMatrix);
+		Matrixx& operator*=(const double multiplier);
 		
 
 		const int getHeight() const;
 		const int getWidth() const;
 
-		Roww& getRow(int row) const;
-		Vectorr& getColumn(int col) const;
+		Roww getRow(int row) const;
+		Vectorr getColumn(int col) const;
 
 		const std::string str() const;
 
@@ -83,9 +88,15 @@ namespace linalg {
 		double& operator[](int col);
 		const double& operator[](int col) const;
 
+		Roww operator+() const;
+		Roww operator-() const;
+
 		Allocator& operator<<(const double value);
 
 		Roww& operator=(const Roww& rightRow);
+		Roww& operator+=(const Roww& rightRow);
+		Roww& operator-=(const Roww& rightRow);
+		Roww& operator*=(const double multiplier);
 
 		const int getWidth() const;
 
@@ -95,7 +106,7 @@ namespace linalg {
 	private:
 		double* entries;
 		int width;
-
+		
 		void init(int width);
 
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
@@ -114,9 +125,15 @@ namespace linalg {
 		double& operator[](int row);
 		const double& operator[](int row) const;
 
+		Vectorr operator+() const;
+		Vectorr operator-() const;
+
 		Allocator& operator<<(const double value);
 
 		Vectorr& operator=(const Vectorr& rightVector);
+		Vectorr& operator+=(const Vectorr& rightVector);
+		Vectorr& operator-=(const Vectorr& rightVector);
+		Vectorr& operator*=(const double multiplier);
 		
 		const int getHeight() const;
 
@@ -131,6 +148,27 @@ namespace linalg {
 
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
+
+	double preventNegativeZero(double value);
+
+	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix);
+	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier);
+
+	Roww operator+(const Roww& leftRow, const Roww& rightRow);
+	Roww operator-(const Roww& leftRow, const Roww& rightRow);
+	Roww operator*(const double multiplier, const Roww& rightRow);
+	Roww operator*(const Roww& leftRow, const double multiplier);
+
+	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector);
+	Vectorr operator-(const Vectorr& leftVector, const Vectorr& rightVector);
+	Vectorr operator*(const double multiplier, const Vectorr& rightVector);
+	Vectorr operator*(const Vectorr& leftVector, const double multiplier);
+
+	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
+	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
+	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);
 
 	//class Celll {
 	//	friend class Matrixx;
