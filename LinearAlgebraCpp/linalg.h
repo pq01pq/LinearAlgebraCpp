@@ -36,6 +36,8 @@ namespace linalg {
 	public:
 		Matrixx(int height, int width);
 		Matrixx(const Matrixx& copyMatrix);
+		explicit Matrixx(const Roww& copyRow);
+		explicit Matrixx(const Vectorr& copyVector);
 		~Matrixx();
 
 		Roww& operator[](int row);
@@ -51,7 +53,12 @@ namespace linalg {
 		Matrixx& operator+=(const Matrixx& rightMatrix);
 		Matrixx& operator-=(const Matrixx& rightMatrix);
 		Matrixx& operator*=(const double multiplier);
-		
+		Matrixx& operator*=(const Matrixx& rightMatrix);
+
+		Matrixx& operator&=(const Matrixx& rightMatrix);
+		Matrixx& operator&=(const Vectorr& rightVector);
+		Matrixx& operator|=(const Matrixx& lowerMatrix);
+		Matrixx& operator|=(const Roww& lowerRow);
 
 		const int getHeight() const;
 		const int getWidth() const;
@@ -155,6 +162,17 @@ namespace linalg {
 	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix);
 	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier);
+	Matrixx operator*(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+
+	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator&(const Matrixx& leftMatrix, const Vectorr& rightVector);
+	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix);
+	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector);
+
+	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
+	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
+	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
+	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerRow);
 
 	Roww operator+(const Roww& leftRow, const Roww& rightRow);
 	Roww operator-(const Roww& leftRow, const Roww& rightRow);

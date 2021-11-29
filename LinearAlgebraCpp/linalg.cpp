@@ -1,7 +1,5 @@
 #include "linalg.h"
 
-using namespace std;
-
 namespace linalg {
 	Allocator::Allocator(Allocatable& target, const int sequence)
 		: target(target), sequence(sequence)
@@ -39,6 +37,24 @@ namespace linalg {
 			for (int col = 0; col < width; col++) {
 				rows[row][col] = copyMatrix[row][col];
 			}
+		}
+	}
+	Matrixx::Matrixx(const Roww& copyRow)
+		: height(1), width(copyRow.width)
+	{
+		rows = new Roww[1];
+		rows[0].init(width);
+		for (int col = 0; col < height; col++) {
+			rows[0][col] = copyRow[col];
+		}
+	}
+	Matrixx::Matrixx(const Vectorr& copyVector)
+		: height(copyVector.height), width(1)
+	{
+		rows = new Roww[height];
+		for (int row = 0; row < height; row++) {
+			rows[row].init(1);
+			rows[row][0] = copyVector[row];
 		}
 	}
 	Matrixx::~Matrixx()
@@ -83,7 +99,7 @@ namespace linalg {
 	void Matrixx::allocate(const int sequence, const double value)
 	{
 		if (sequence < height * width) {
-			rows[sequence / width][sequence % width] = value;
+			rows[sequence / width][sequence % width] = preventNegativeZero(value);
 		}
 	}
 
@@ -94,7 +110,7 @@ namespace linalg {
 		}
 
 		Matrixx copyMatrix(rightMatrix);
-		swap(*this, copyMatrix);
+		linalg::swap(*this, copyMatrix);
 		return *this;
 	}
 	void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept
@@ -108,14 +124,14 @@ namespace linalg {
 	{
 		if (height != rightMatrix.height) {
 			std::string errorString =
-				"Heights do not match : row" + to_string(height) + " + row" + to_string(rightMatrix.height) + "\n";
+				"Heights do not match : row" + std::to_string(height) + " + row" + std::to_string(rightMatrix.height) + "\n";
 			try {
 				rows[0] + rightMatrix[0];
 			}
-			catch (const logic_error& e) {
+			catch (const std::logic_error& e) {
 				errorString += e.what();
 			}
-			throw logic_error(errorString);
+			throw std::logic_error(errorString);
 		}
 		for (int row = 0; row < height; row++) {
 			rows[row] += rightMatrix[row];
@@ -126,14 +142,14 @@ namespace linalg {
 	{
 		if (height != rightMatrix.height) {
 			std::string errorString =
-				"Heights do not match : row" + to_string(height) + " - row" + to_string(rightMatrix.height) + "\n";
+				"Heights do not match : row" + std::to_string(height) + " - row" + std::to_string(rightMatrix.height) + "\n";
 			try {
 				rows[0] - rightMatrix[0];
 			}
-			catch (const logic_error& e) {
+			catch (const std::logic_error& e) {
 				errorString += e.what();
 			}
-			throw logic_error(errorString);
+			throw std::logic_error(errorString);
 		}
 		for (int row = 0; row < height; row++) {
 			rows[row] -= rightMatrix[row];
@@ -147,9 +163,185 @@ namespace linalg {
 		}
 		return *this;
 	}
+
+	Matrixx& Matrixx::operator*=(const Matrixx& rightMatrix)
+	{
+		if (width != rightMatrix.height) {
+			throw std::logic_error("Cannot multiply matrices : ("
+				+ std::to_string(height) + " x " + std::to_string(width) + ") x ("
+				+ std::to_string(rightMatrix.height) + " x " + std::to_string(rightMatrix.width) + ")");
+		}
+		Matrixx resultMatrix(height, rightMatrix.width);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < rightMatrix.width; col++) {
+				double product = 0.0;
+				for (int join = 0; join < width; join++) {
+					product += rows[row][join] * rightMatrix[join][col];
+				}
+				resultMatrix[row][col] = preventNegativeZero(product);
+			}
+		}
+		linalg::swap(*this, resultMatrix);
+		return *this;
+	}
+
+	Matrixx& Matrixx::operator&=(const Matrixx& rightMatrix)
+	{
+		if (height != rightMatrix.height) {
+			throw std::logic_error(
+				"Heights do not match : row" + std::to_string(height) + " & row" + std::to_string(rightMatrix.height) + "\n");
+		}
+		Matrixx appendedMatrix(height, width + rightMatrix.width);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				appendedMatrix[row][col] = rows[row][col];
+			}
+		}
+		for (int row = 0; row < height; row++) {
+			for (int col = width; col < width + rightMatrix.width; col++) {
+				appendedMatrix[row][col] = rightMatrix[row][col - width];
+			}
+		}
+		linalg::swap(*this, appendedMatrix);
+		return *this;
+	}
+	Matrixx& Matrixx::operator&=(const Vectorr& rightVector)
+	{
+		if (height != rightVector.height) {
+			throw std::logic_error(
+				"Heights do not match : row" + std::to_string(height) + " & row" + std::to_string(rightVector.height) + "\n");
+		}
+		Matrixx appendedMatrix(height, width + 1);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				appendedMatrix[row][col] = rows[row][col];
+			}
+		}
+		for (int row = 0; row < height; row++) {
+			appendedMatrix[row][width] = rightVector[row];
+		}
+		linalg::swap(*this, appendedMatrix);
+		return *this;
+	}
+	Matrixx& Matrixx::operator|=(const Matrixx& lowerMatrix)
+	{
+		if (width != lowerMatrix.width) {
+			throw std::logic_error(
+				"Widths do not match : col" + std::to_string(width) + " | col" + std::to_string(lowerMatrix.width) + "\n");
+		}
+		Matrixx appendedMatrix(height + lowerMatrix.height, width);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				appendedMatrix[row][col] = rows[row][col];
+			}
+		}
+		for (int row = height; row < height + lowerMatrix.height; row++) {
+			for (int col = 0; col < width; col++) {
+				appendedMatrix[row][col] = lowerMatrix[row - height][col];
+			}
+		}
+		linalg::swap(*this, appendedMatrix);
+		return *this;
+	}
+	Matrixx& Matrixx::operator|=(const Roww& lowerRow)
+	{
+		if (width != lowerRow.width) {
+			throw std::logic_error(
+				"Widths do not match : col" + std::to_string(width) + " | col" + std::to_string(lowerRow.width) + "\n");
+		}
+		Matrixx appendedMatrix(height + 1, width);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				appendedMatrix[row][col] = rows[row][col];
+			}
+		}
+		for (int col = 0; col < width; col++) {
+			appendedMatrix[height][col] = lowerRow[col];
+		}
+		linalg::swap(*this, appendedMatrix);
+		return *this;
+	}
+
+	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		Matrixx resultMatrix(leftMatrix);
+		resultMatrix += rightMatrix;
+		return resultMatrix;
+	}
+	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		Matrixx resultMatrix(leftMatrix);
+		resultMatrix -= rightMatrix;
+		return resultMatrix;
+	}
+	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix)
+	{
+		Matrixx resultMatrix(rightMatrix);
+		resultMatrix *= multiplier;
+		return resultMatrix;
+	}
+	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier)
+	{
+		return operator*(multiplier, leftMatrix);
+	}
+	Matrixx operator*(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		Matrixx resultMatrix(leftMatrix);
+		resultMatrix *= rightMatrix;
+		return resultMatrix;
+	}
+
+	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		Matrixx appendedMatrix(leftMatrix);
+		appendedMatrix &= rightMatrix;
+		return appendedMatrix;
+	}
+	Matrixx operator&(const Matrixx& leftMatrix, const Vectorr& rightVector)
+	{
+		Matrixx appendedMatrix(leftMatrix);
+		appendedMatrix &= rightVector;
+		return appendedMatrix;
+	}
+	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix)
+	{
+		Matrixx appendedMatrix(leftVector);
+		appendedMatrix &= rightMatrix;
+		return appendedMatrix;
+	}
+	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector)
+	{
+		Matrixx appendedMatrix(leftVector);
+		appendedMatrix &= rightVector;
+		return appendedMatrix;
+	}
+
+	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix)
+	{
+		Matrixx appendedMatrix(upperMatrix);
+		appendedMatrix |= lowerMatrix;
+		return appendedMatrix;
+	}
+	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow)
+	{
+		Matrixx appendedMatrix(upperMatrix);
+		appendedMatrix |= lowerRow;
+		return appendedMatrix;
+	}
+	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix)
+	{
+		Matrixx appendedMatrix(upperRow);
+		appendedMatrix |= lowerMatrix;
+		return appendedMatrix;
+	}
+	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerRow)
+	{
+		Matrixx appendedMatrix(upperRow);
+		appendedMatrix |= lowerRow;
+		return appendedMatrix;
+	}
 	
-	
-	
+
 	const int Matrixx::getHeight() const
 	{
 		return height;
@@ -178,7 +370,7 @@ namespace linalg {
 
 	const std::string Matrixx::str() const
 	{
-		std::string matrixString = "(" + to_string(height) + " x " + to_string(width) + " Matrix)\n";
+		std::string matrixString = "(" + std::to_string(height) + " x " + std::to_string(width) + " Matrix)\n";
 		for (int row = 0; row < height; row++) {
 			matrixString += rows[row].str();
 		}
@@ -242,7 +434,7 @@ namespace linalg {
 	void Roww::allocate(const int sequence, const double value)
 	{
 		if (sequence < width) {
-			entries[sequence] = value;
+			entries[sequence] = preventNegativeZero(value);
 		}
 	}
 
@@ -253,7 +445,7 @@ namespace linalg {
 		}
 
 		Roww copyRow(rightRow);
-		swap(*this, copyRow);
+		linalg::swap(*this, copyRow);
 		return *this;
 	}
 	void swap(Roww& leftRow, Roww& rightRow) noexcept
@@ -265,8 +457,8 @@ namespace linalg {
 	Roww& Roww::operator+=(const Roww& rightRow)
 	{
 		if (width != rightRow.width) {
-			throw logic_error(
-				"Widths do not match : col" + to_string(width) + " + col" + to_string(rightRow.width) + "\n");
+			throw std::logic_error(
+				"Widths do not match : col" + std::to_string(width) + " + col" + std::to_string(rightRow.width) + "\n");
 		}
 		for (int col = 0; col < width; col++) {
 			entries[col] = preventNegativeZero(entries[col] + rightRow[col]);
@@ -276,8 +468,8 @@ namespace linalg {
 	Roww& Roww::operator-=(const Roww& rightRow)
 	{
 		if (width != rightRow.width) {
-			throw logic_error(
-				"Widths do not match : col" + to_string(width) + " - col" + to_string(rightRow.width) + "\n");
+			throw std::logic_error(
+				"Widths do not match : col" + std::to_string(width) + " - col" + std::to_string(rightRow.width) + "\n");
 		}
 		for (int col = 0; col < width; col++) {
 			entries[col] = preventNegativeZero(entries[col] - rightRow[col]);
@@ -292,6 +484,29 @@ namespace linalg {
 		return *this;
 	}
 
+	Roww operator+(const Roww& leftRow, const Roww& rightRow)
+	{
+		Roww resultRow(leftRow);
+		resultRow += rightRow;
+		return resultRow;
+	}
+	Roww operator-(const Roww& leftRow, const Roww& rightRow)
+	{
+		Roww resultRow(leftRow);
+		resultRow -= rightRow;
+		return resultRow;
+	}
+	Roww operator*(const double multiplier, const Roww& rightRow)
+	{
+		Roww resultRow(rightRow);
+		resultRow *= multiplier;
+		return resultRow;
+	}
+	Roww operator*(const Roww& leftRow, const double multiplier)
+	{
+		return operator*(multiplier, leftRow);
+	}
+
 	const int Roww::getWidth() const
 	{
 		return width;
@@ -301,7 +516,7 @@ namespace linalg {
 	{
 		std::string rowString = "[\t";
 		for (int col = 0; col < width; col++) {
-			rowString += to_string(entries[col]) + "\t";
+			rowString += std::to_string(entries[col]) + "\t";
 		}
 		rowString += "]\n";
 		return rowString;
@@ -332,6 +547,12 @@ namespace linalg {
 	{
 		delete[] entries;
 	}
+	void Vectorr::init(int height)
+	{
+		this->height = height;
+		entries = new double[height];
+	}
+
 	double& Vectorr::operator[](int row)
 	{
 		return entries[row];
@@ -348,68 +569,8 @@ namespace linalg {
 	void Vectorr::allocate(const int sequence, const double value)
 	{
 		if (sequence < height) {
-			entries[sequence] = value;
+			entries[sequence] = preventNegativeZero(value);
 		}
-	}
-
-	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
-	{
-		if (this == &rightVector) {
-			return *this;
-		}
-
-		Vectorr copyRow(rightVector);
-		swap(*this, copyRow);
-		return *this;
-	}
-	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
-	{
-		std::swap(leftVector.entries, rightVector.entries);
-		std::swap(leftVector.height, rightVector.height);
-	}
-
-	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
-	{
-		if (height != rightVector.height) {
-			throw logic_error(
-				"Heights do not match : row" + to_string(height) + " + col" + to_string(rightVector.height) + "\n");
-		}
-		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(entries[row] + rightVector[row]);
-		}
-		return *this;
-	}
-	Vectorr& Vectorr::operator-=(const Vectorr& rightVector)
-	{
-		if (height != rightVector.height) {
-			throw logic_error(
-				"Heights do not match : row" + to_string(height) + " - col" + to_string(rightVector.height) + "\n");
-		}
-		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(entries[row] - rightVector[row]);
-		}
-		return *this;
-	}
-	Vectorr& Vectorr::operator*=(const double multiplier)
-	{
-		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(multiplier * entries[row]);
-		}
-		return *this;
-	}
-
-	const int Vectorr::getHeight() const
-	{
-		return height;
-	}
-
-	const std::string Vectorr::str() const
-	{
-		std::string vectorString = "(" + to_string(height) + " row Vector)\n";
-		for (int row = 0; row < height; row++) {
-			vectorString += "[\t" + to_string(entries[row]) + "\t]\n";
-		}
-		return vectorString;
 	}
 
 	Vectorr Vectorr::operator+() const
@@ -424,66 +585,51 @@ namespace linalg {
 		}
 		return negativeVector;
 	}
-	
-	void Vectorr::init(int height)
+
+	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
 	{
-		this->height = height;
-		entries = new double[height];
+		if (this == &rightVector) {
+			return *this;
+		}
+
+		Vectorr copyRow(rightVector);
+		linalg::swap(*this, copyRow);
+		return *this;
+	}
+	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
+	{
+		std::swap(leftVector.entries, rightVector.entries);
+		std::swap(leftVector.height, rightVector.height);
 	}
 
-
-
-
-
-	double preventNegativeZero(double value)
+	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
 	{
-		return (value == -0.0) ? 0.0 : value;
+		if (height != rightVector.height) {
+			throw std::logic_error(
+				"Heights do not match : row" + std::to_string(height) + " + col" + std::to_string(rightVector.height) + "\n");
+		}
+		for (int row = 0; row < height; row++) {
+			entries[row] = preventNegativeZero(entries[row] + rightVector[row]);
+		}
+		return *this;
 	}
-
-	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	Vectorr& Vectorr::operator-=(const Vectorr& rightVector)
 	{
-		Matrixx resultMatrix(leftMatrix);
-		resultMatrix += rightMatrix;
-		return resultMatrix;
+		if (height != rightVector.height) {
+			throw std::logic_error(
+				"Heights do not match : row" + std::to_string(height) + " - col" + std::to_string(rightVector.height) + "\n");
+		}
+		for (int row = 0; row < height; row++) {
+			entries[row] = preventNegativeZero(entries[row] - rightVector[row]);
+		}
+		return *this;
 	}
-	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	Vectorr& Vectorr::operator*=(const double multiplier)
 	{
-		Matrixx resultMatrix(leftMatrix);
-		resultMatrix -= rightMatrix;
-		return resultMatrix;
-	}
-	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix)
-	{
-		Matrixx resultMatrix(rightMatrix);
-		resultMatrix *= multiplier;
-		return resultMatrix;
-	}
-	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier)
-	{
-		return operator*(multiplier, leftMatrix);
-	}
-
-	Roww operator+(const Roww& leftRow, const Roww& rightRow)
-	{
-		Roww resultRow(leftRow);
-		resultRow += rightRow;
-		return resultRow;
-	}
-	Roww operator-(const Roww& leftRow, const Roww& rightRow)
-	{
-		Roww resultRow(leftRow);
-		resultRow -= rightRow;
-		return resultRow;
-	}
-	Roww operator*(const double multiplier, const Roww& rightRow)
-	{
-		Roww resultRow(rightRow);
-		resultRow *= multiplier;
-		return resultRow;
-	}
-	Roww operator*(const Roww& leftRow, const double multiplier)
-	{
-		return operator*(multiplier, leftRow);
+		for (int row = 0; row < height; row++) {
+			entries[row] = preventNegativeZero(multiplier * entries[row]);
+		}
+		return *this;
 	}
 
 	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector)
@@ -508,6 +654,37 @@ namespace linalg {
 	{
 		return operator*(multiplier, leftVector);
 	}
+
+	const int Vectorr::getHeight() const
+	{
+		return height;
+	}
+
+	const std::string Vectorr::str() const
+	{
+		std::string vectorString = "(" + std::to_string(height) + " row Vector)\n";
+		for (int row = 0; row < height; row++) {
+			vectorString += "[\t" + std::to_string(entries[row]) + "\t]\n";
+		}
+		return vectorString;
+	}
+
+	
+	
+	
+
+
+
+
+
+	double preventNegativeZero(double value)
+	{
+		return (value == -0.0) ? 0.0 : value;
+	}
+
+	
+
+	
 
 	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix)
 	{
