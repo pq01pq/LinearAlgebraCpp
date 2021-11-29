@@ -69,6 +69,24 @@ namespace linalg {
 	{
 		rows[sequence / width][sequence % width] = value;
 	}
+
+	Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
+	{
+		if (this == &rightMatrix) {
+			return *this;
+		}
+
+		Matrixx copyMatrix(rightMatrix);
+		swap(*this, copyMatrix);
+		return *this;
+	}
+	void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept
+	{
+		std::swap(leftMatrix.rows, rightMatrix.rows);
+		std::swap(leftMatrix.height, rightMatrix.height);
+		std::swap(leftMatrix.width, rightMatrix.width);
+	}
+	
 	
 	const int Matrixx::getHeight() const
 	{
@@ -77,6 +95,23 @@ namespace linalg {
 	const int Matrixx::getWidth() const
 	{
 		return width;
+	}
+
+	Roww& Matrixx::getRow(int row) const
+	{
+		Roww copyRow(row);
+		for (int col = 0; col < width; col++) {
+			copyRow[col] = rows[row][col];
+		}
+		return copyRow;
+	}
+	Vectorr& Matrixx::getColumn(int col) const
+	{
+		Vectorr copyVector(width);
+		for (int row = 0; row < height; row++) {
+			copyVector[row] = rows[row][col];
+		}
+		return copyVector;
 	}
 
 	const std::string Matrixx::str() const
@@ -96,32 +131,32 @@ namespace linalg {
 	Roww::Roww(int width)
 		: width(width)
 	{
-		cells = new double[width];
+		entries = new double[width];
 	}
 	Roww::Roww(const Roww& copyRow)
 		: Roww(copyRow.getWidth())
 	{
 		for (int col = 0; col < width; col++) {
-			cells[col] = copyRow[col];
+			entries[col] = copyRow[col];
 		}
 	}
 	linalg::Roww::~Roww()
 	{
-		delete[] cells;
+		delete[] entries;
 	}
 	void Roww::init(int width)
 	{
 		this->width = width;
-		cells = new double[width];
+		entries = new double[width];
 	}
 
 	double& Roww::operator[](int col)
 	{
-		return cells[col];
+		return entries[col];
 	}
 	const double& Roww::operator[](int col) const
 	{
-		return cells[col];
+		return entries[col];
 	}
 
 	Allocator& Roww::operator<<(const double value)
@@ -131,7 +166,23 @@ namespace linalg {
 	}
 	void Roww::allocate(const int sequence, const double value)
 	{
-		cells[sequence] = value;
+		entries[sequence] = value;
+	}
+
+	Roww& Roww::operator=(const Roww& rightRow)
+	{
+		if (this == &rightRow) {
+			return *this;
+		}
+
+		Roww copyRow(rightRow);
+		swap(*this, copyRow);
+		return *this;
+	}
+	void swap(Roww& leftRow, Roww& rightRow) noexcept
+	{
+		std::swap(leftRow.entries, rightRow.entries);
+		std::swap(leftRow.width, rightRow.width);
 	}
 
 	const int Roww::getWidth() const
@@ -143,7 +194,7 @@ namespace linalg {
 	{
 		std::string rowString = "[\t";
 		for (int col = 0; col < width; col++) {
-			rowString += to_string(cells[col]) + "\t";
+			rowString += to_string(entries[col]) + "\t";
 		}
 		rowString += "]\n";
 		return rowString;
@@ -161,26 +212,26 @@ namespace linalg {
 	linalg::Vectorr::Vectorr(int height)
 		: height(height)
 	{
-		cells = new double[height];
+		entries = new double[height];
 	}
 	Vectorr::Vectorr(const Vectorr& copyVector)
 		: Vectorr(copyVector.getHeight())
 	{
 		for (int row = 0; row < height; row++) {
-			cells[row] = copyVector[row];
+			entries[row] = copyVector[row];
 		}
 	}
 	linalg::Vectorr::~Vectorr()
 	{
-		delete[] cells;
+		delete[] entries;
 	}
 	double& Vectorr::operator[](int row)
 	{
-		return cells[row];
+		return entries[row];
 	}
 	const double& Vectorr::operator[](int row) const
 	{
-		return cells[row];
+		return entries[row];
 	}
 	Allocator& Vectorr::operator<<(const double value)
 	{
@@ -189,7 +240,23 @@ namespace linalg {
 	}
 	void Vectorr::allocate(const int sequence, const double value)
 	{
-		cells[sequence] = value;
+		entries[sequence] = value;
+	}
+
+	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
+	{
+		if (this == &rightVector) {
+			return *this;
+		}
+
+		Vectorr copyRow(rightVector);
+		swap(*this, copyRow);
+		return *this;
+	}
+	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
+	{
+		std::swap(leftVector.entries, rightVector.entries);
+		std::swap(leftVector.height, rightVector.height);
 	}
 
 	const int Vectorr::getHeight() const
@@ -201,7 +268,7 @@ namespace linalg {
 	{
 		std::string vectorString = "(" + to_string(height) + " row Vector)\n";
 		for (int row = 0; row < height; row++) {
-			vectorString += "[\t" + to_string(cells[row]) + "\t]\n";
+			vectorString += "[\t" + to_string(entries[row]) + "\t]\n";
 		}
 		return vectorString;
 	}
@@ -209,7 +276,7 @@ namespace linalg {
 	void Vectorr::init(int height)
 	{
 		this->height = height;
-		cells = new double[height];
+		entries = new double[height];
 	}
 
 
@@ -252,5 +319,7 @@ namespace linalg {
 	//{
 	//	return value;
 	//}
+
+	
 
 }

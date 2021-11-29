@@ -44,22 +44,30 @@ namespace linalg {
 		double& operator()(int row, int col) const;
 
 		Allocator& operator<<(const double value);
+
+		Matrixx& operator=(const Matrixx& rightMatrix);
 		
+
 		const int getHeight() const;
 		const int getWidth() const;
 
+		Roww& getRow(int row) const;
+		Vectorr& getColumn(int col) const;
+
 		const std::string str() const;
+
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
 		Roww* rows;
 		int height, width;
-		int count = 0;
 
 		struct Pivot {
 			int row, col;
 			double value;
 		};
+
+		friend void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept;
 	};
 
 	class Roww : private Allocatable {
@@ -71,12 +79,13 @@ namespace linalg {
 		explicit Roww(int width);
 		Roww(const Roww& copyRow);
 		~Roww();
-		
 
 		double& operator[](int col);
 		const double& operator[](int col) const;
 
 		Allocator& operator<<(const double value);
+
+		Roww& operator=(const Roww& rightRow);
 
 		const int getWidth() const;
 
@@ -84,10 +93,12 @@ namespace linalg {
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
-		double* cells;
+		double* entries;
 		int width;
 
 		void init(int width);
+
+		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
 	};
 
 	class Vectorr : private Allocatable {
@@ -104,6 +115,8 @@ namespace linalg {
 		const double& operator[](int row) const;
 
 		Allocator& operator<<(const double value);
+
+		Vectorr& operator=(const Vectorr& rightVector);
 		
 		const int getHeight() const;
 
@@ -111,10 +124,12 @@ namespace linalg {
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
-		double* cells;
+		double* entries;
 		int height;
 
 		void init(int height);
+
+		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
 
 	//class Celll {
@@ -135,8 +150,4 @@ namespace linalg {
 	//private:
 	//	double value;
 	//};
-
-	
-
-	
 }
