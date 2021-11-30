@@ -1,6 +1,8 @@
 #include "linalg_exception.h"
 
+
 namespace linalg {
+
 	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber)
 		: exceptionState(exceptionState), exceptionNumber(exceptionNumber)
 	{
@@ -28,61 +30,61 @@ namespace linalg {
 
 	const std::string ExceptionHandler::getLengthErrorString() const
 	{
-		std::string exceptionString;
+		std::string exceptStr;
 		switch (exceptionNumber) {
 		case (int)LengthState::InvalidHeight:
-			exceptionString = "Bad height";
+			exceptStr = "Bad height";
 		case (int)LengthState::InvalidWidth:
-			exceptionString = "Bad width";
+			exceptStr = "Bad width";
 		case (int)LengthState::InvalidHeightAndWidth:
-			exceptionString = "Bad height and width";
+			exceptStr = "Bad height and width";
 		default:
 			break;
 		}
 		if (exceptionArgs.size() > 0) {
-			exceptionString += " : " + exceptionArgs[0].str();
+			exceptStr += " : " + exceptionArgs[0].str();
 		}
-		return exceptionString;
+		return exceptStr;
 	}
 	const std::string ExceptionHandler::getOutOfRangeString() const
 	{
-		std::string exceptionString;
+		std::string exceptStr;
 		switch (exceptionNumber) {
 		case (int)IndexState::RowIndexOutOfRange:
-			exceptionString = "Row index out of range";
+			exceptStr = "Row index out of range";
 		case (int)IndexState::ColumnIndexOutOfRange:
-			exceptionString = "Column index out of range";
+			exceptStr = "Column index out of range";
 		case (int)IndexState::BothIndexOutOfRange:
-			exceptionString = "Row and column index out of range";
+			exceptStr = "Row and column index out of range";
 		default:
 			break;
 		}
 		if (exceptionArgs.size() > 0) {
 			for (int argIndex = 0; argIndex < exceptionArgs.size(); argIndex++) {
-				exceptionString += "\n" + exceptionArgs[argIndex].str();
+				exceptStr += "\n" + exceptionArgs[argIndex].str();
 			}
 		}
-		return exceptionString;
+		return exceptStr;
 	}
 	const std::string ExceptionHandler::getArithmeticExceptionString() const
 	{
-		std::string exceptionString;
+		std::string exceptStr;
 		switch (exceptionNumber) {
 		case (int)OperationState::HeightDoNotMatch:
-			exceptionString = "Height do not match";
+			exceptStr = "Height do not match";
 		case (int)OperationState::WidthDoNotMatch:
-			exceptionString = "Width do not match";
+			exceptStr = "Width do not match";
 		case (int)OperationState::BothLengthDoNotMatch:
-			exceptionString = "Height and width do not match";
+			exceptStr = "Height and width do not match";
 		case (int)OperationState::JoinLengthDoNotMatch:
-			exceptionString = "Cannot multiply";
+			exceptStr = "Cannot multiply";
 		default:
 			break;
 		}
 		if (exceptionArgs.size() > 0) {
-			exceptionString += " : " + exceptionArgs[0].str();
+			exceptStr += " : " + exceptionArgs[0].str();
 		}
-		return exceptionString;
+		return exceptStr;
 	}
 
 	const int ExceptionHandler::checkValidHeight(const int height)
@@ -172,6 +174,7 @@ namespace linalg {
 
 
 
+
 	ColumnIndexArgument::ColumnIndexArgument(const int col, const int width)
 		: col(col), width(width)
 	{
@@ -184,6 +187,7 @@ namespace linalg {
 	{
 		return "Column : range(0-" + std::to_string(col - 1) + "), access(" + std::to_string(width) + ")";
 	}
+
 
 
 

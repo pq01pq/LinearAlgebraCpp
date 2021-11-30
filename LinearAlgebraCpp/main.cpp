@@ -3,36 +3,6 @@
 using namespace std;
 using namespace linalg;
 
-class In;
-class Out;
-
-class In {
-public:
-	In() = default;
-	~In() {
-		
-	}
-	void setParent(Out& out) {
-		parent = &out;
-	}
-	Out* parent;
-};
-
-class Out {
-public:
-	Out()
-	{
-		in = new In();
-		in->setParent(*this);
-	}
-	~Out() {}
-	void removeChild() {
-		delete in;
-	}
-	In* in;
-};
-
-
 int main()
 {
 	Matrixx matrix(3, 3);
