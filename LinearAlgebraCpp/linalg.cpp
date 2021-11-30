@@ -19,41 +19,40 @@ namespace linalg {
 
 
 
-
-	Matrixx::Matrixx(int height, int width)
-		: height(height), width(width)
+	Matrixx::Matrixx(const int height, const int width)
 	{
+		check::LengthInfo lengthInfo{ height, width };
+		int errorNumber = check::checkHeight(height);
+		errorNumber += check::checkWidth(width);
+		check::handleLengthError(errorNumber, lengthInfo);
+
+		this->height = height;
+		this->width = width;
 		rows = new Roww[height];
 		for (int row = 0; row < height; row++) {
 			rows[row].init(width);
 		}
 	}
 	Matrixx::Matrixx(const Matrixx& copyMatrix)
-		: height(copyMatrix.height), width(copyMatrix.width)
+		: Matrixx(copyMatrix.height, copyMatrix.width)
 	{
-		rows = new Roww[height];
 		for (int row = 0; row < height; row++) {
-			rows[row].init(width);
 			for (int col = 0; col < width; col++) {
 				rows[row][col] = copyMatrix[row][col];
 			}
 		}
 	}
 	Matrixx::Matrixx(const Roww& copyRow)
-		: height(1), width(copyRow.width)
+		: Matrixx(1, copyRow.width)
 	{
-		rows = new Roww[1];
-		rows[0].init(width);
 		for (int col = 0; col < height; col++) {
 			rows[0][col] = copyRow[col];
 		}
 	}
 	Matrixx::Matrixx(const Vectorr& copyVector)
-		: height(copyVector.height), width(1)
+		: Matrixx(copyVector.height, 1)
 	{
-		rows = new Roww[height];
 		for (int row = 0; row < height; row++) {
-			rows[row].init(1);
 			rows[row][0] = copyVector[row];
 		}
 	}
@@ -62,18 +61,68 @@ namespace linalg {
 		delete[] rows;
 	}
 
-	Roww& Matrixx::operator[](int row)
+	Matrixx Matrixx::block(const int beginRow, const int beginCol, const int blockHeight, const int blockWidth) const
 	{
+		check::LengthInfo lengthInfo{ height, width };
+		check::IndexInfo beginIndexInfo{ beginRow, beginCol };
+		check::IndexInfo endIndexInfo{ beginRow + blockHeight - 1, beginCol + blockWidth - 1 };
+
+		int errorNumber = check::checkRowIndex(beginRow, height);
+		errorNumber += check::checkColumnIndex(beginCol, width);
+		check::handleOutOfRange(errorNumber, beginIndexInfo);
+
+		errorNumber = check::checkRowIndex(beginRow + blockHeight - 1, height);
+		errorNumber += check::checkColumnIndex(beginCol + blockWidth - 1, width);
+		check::handleOutOfRange(errorNumber, endIndexInfo);
+
+		Matrixx blockMatrix(blockHeight, blockWidth);
+		for (int row = 0; row < blockHeight; row++) {
+			for (int col = 0; col < blockWidth; col++) {
+				blockMatrix[row][col] = rows[beginRow + row][beginCol + col];
+			}
+		}
+		return blockMatrix;
+	}
+
+	Roww& Matrixx::operator[](const int row)
+	{
+		check::LengthInfo lengthInfo{ height, width };
+		check::IndexInfo indexInfo{ row, 0, lengthInfo };
+		int errorNumber = check::checkRowIndex(row, height);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
 		return rows[row];
 	}
-	const Roww& Matrixx::operator[](int row) const
+	const Roww& Matrixx::operator[](const int row) const
 	{
+		check::LengthInfo lengthInfo{ height, width };
+		check::IndexInfo indexInfo{ row, 0, lengthInfo };
+		int errorNumber = check::checkRowIndex(row, height);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
 		return rows[row];
 	}
 
-	double& Matrixx::operator()(int row, int col) const
+	double& Matrixx::operator()(const int row, const int col) const
 	{
+		check::LengthInfo lengthInfo{ height, width };
+		check::IndexInfo indexInfo{ row, col, lengthInfo };
+		int errorNumber = check::checkRowIndex(row, height);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
 		return rows[row][col];
+	}
+
+	Allocator& Matrixx::operator<<(const double value)
+	{
+		this->allocate(0, value);
+		return *(new Allocator(*this, 1));
+	}
+	void Matrixx::allocate(const int sequence, const double value)
+	{
+		if (sequence < height * width) {
+			rows[sequence / width][sequence % width] = check::preventNegativeZero(value);
+		}
 	}
 
 	Matrixx Matrixx::operator+() const
@@ -85,22 +134,10 @@ namespace linalg {
 		Matrixx negativeMatrix(*this);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
-				negativeMatrix[row][col] = preventNegativeZero(-rows[row][col]);
+				negativeMatrix[row][col] = check::preventNegativeZero(-rows[row][col]);
 			}
 		}
 		return negativeMatrix;
-	}
-
-	Allocator& Matrixx::operator<<(const double value)
-	{
-		this->allocate(0, value);
-		return *(new Allocator(*this, 1));
-	}
-	void Matrixx::allocate(const int sequence, const double value)
-	{
-		if (sequence < height * width) {
-			rows[sequence / width][sequence % width] = preventNegativeZero(value);
-		}
 	}
 
 	Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
@@ -110,7 +147,7 @@ namespace linalg {
 		}
 
 		Matrixx copyMatrix(rightMatrix);
-		linalg::swap(*this, copyMatrix);
+		swap(*this, copyMatrix);
 		return *this;
 	}
 	void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept
@@ -122,17 +159,13 @@ namespace linalg {
 
 	Matrixx& Matrixx::operator+=(const Matrixx& rightMatrix)
 	{
-		if (height != rightMatrix.height) {
-			std::string errorString =
-				"Heights do not match : row" + std::to_string(height) + " + row" + std::to_string(rightMatrix.height) + "\n";
-			try {
-				rows[0] + rightMatrix[0];
-			}
-			catch (const std::logic_error& e) {
-				errorString += e.what();
-			}
-			throw std::logic_error(errorString);
-		}
+		check::LengthInfo leftLengthInfo{ height, width };
+		check::LengthInfo rightLengthInfo{ rightMatrix.height, rightMatrix.width };
+		check::OperationInfo operationInfo{ '+', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightMatrix.height);
+		errorNumber += check::checkWidth(width, rightMatrix.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int row = 0; row < height; row++) {
 			rows[row] += rightMatrix[row];
 		}
@@ -140,17 +173,13 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator-=(const Matrixx& rightMatrix)
 	{
-		if (height != rightMatrix.height) {
-			std::string errorString =
-				"Heights do not match : row" + std::to_string(height) + " - row" + std::to_string(rightMatrix.height) + "\n";
-			try {
-				rows[0] - rightMatrix[0];
-			}
-			catch (const std::logic_error& e) {
-				errorString += e.what();
-			}
-			throw std::logic_error(errorString);
-		}
+		check::LengthInfo leftLengthInfo{ height, width };
+		check::LengthInfo rightLengthInfo{ rightMatrix.height, rightMatrix.width };
+		check::OperationInfo operationInfo{ '-', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightMatrix.height);
+		errorNumber += check::checkWidth(width, rightMatrix.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int row = 0; row < height; row++) {
 			rows[row] -= rightMatrix[row];
 		}
@@ -166,11 +195,12 @@ namespace linalg {
 
 	Matrixx& Matrixx::operator*=(const Matrixx& rightMatrix)
 	{
-		if (width != rightMatrix.height) {
-			throw std::logic_error("Cannot multiply matrices : ("
-				+ std::to_string(height) + " x " + std::to_string(width) + ") x ("
-				+ std::to_string(rightMatrix.height) + " x " + std::to_string(rightMatrix.width) + ")");
-		}
+		check::LengthInfo leftLengthInfo{ height, width };
+		check::LengthInfo rightLengthInfo{ rightMatrix.height, rightMatrix.width };
+		check::OperationInfo operationInfo{ '*', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkJoinLength(width, rightMatrix.height);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		Matrixx resultMatrix(height, rightMatrix.width);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < rightMatrix.width; col++) {
@@ -178,7 +208,7 @@ namespace linalg {
 				for (int join = 0; join < width; join++) {
 					product += rows[row][join] * rightMatrix[join][col];
 				}
-				resultMatrix[row][col] = preventNegativeZero(product);
+				resultMatrix[row][col] = check::preventNegativeZero(product);
 			}
 		}
 		linalg::swap(*this, resultMatrix);
@@ -187,10 +217,12 @@ namespace linalg {
 
 	Matrixx& Matrixx::operator&=(const Matrixx& rightMatrix)
 	{
-		if (height != rightMatrix.height) {
-			throw std::logic_error(
-				"Heights do not match : row" + std::to_string(height) + " & row" + std::to_string(rightMatrix.height) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ height, width };
+		check::LengthInfo rightLengthInfo{ rightMatrix.height, rightMatrix.width };
+		check::OperationInfo operationInfo{ '&', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightMatrix.height);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		Matrixx appendedMatrix(height, width + rightMatrix.width);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
@@ -207,10 +239,12 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator&=(const Vectorr& rightVector)
 	{
-		if (height != rightVector.height) {
-			throw std::logic_error(
-				"Heights do not match : row" + std::to_string(height) + " & row" + std::to_string(rightVector.height) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ height, width };
+		check::LengthInfo rightLengthInfo{ rightVector.height, 1 };
+		check::OperationInfo operationInfo{ '&', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightVector.height);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		Matrixx appendedMatrix(height, width + 1);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
@@ -225,10 +259,12 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator|=(const Matrixx& lowerMatrix)
 	{
-		if (width != lowerMatrix.width) {
-			throw std::logic_error(
-				"Widths do not match : col" + std::to_string(width) + " | col" + std::to_string(lowerMatrix.width) + "\n");
-		}
+		check::LengthInfo upperLengthInfo{ height, width };
+		check::LengthInfo lowerLengthInfo{ lowerMatrix.height, lowerMatrix.width };
+		check::OperationInfo operationInfo{ '|', upperLengthInfo, lowerLengthInfo };
+		int errorNumber = check::checkWidth(width, lowerMatrix.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		Matrixx appendedMatrix(height + lowerMatrix.height, width);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
@@ -245,10 +281,12 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator|=(const Roww& lowerRow)
 	{
-		if (width != lowerRow.width) {
-			throw std::logic_error(
-				"Widths do not match : col" + std::to_string(width) + " | col" + std::to_string(lowerRow.width) + "\n");
-		}
+		check::LengthInfo upperLengthInfo{ height, width };
+		check::LengthInfo lowerLengthInfo{ 1, lowerRow.width };
+		check::OperationInfo operationInfo{ '|', upperLengthInfo, lowerLengthInfo };
+		int errorNumber = check::checkWidth(width, lowerRow.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		Matrixx appendedMatrix(height + 1, width);
 		for (int row = 0; row < height; row++) {
 			for (int col = 0; col < width; col++) {
@@ -334,11 +372,16 @@ namespace linalg {
 		appendedMatrix |= lowerMatrix;
 		return appendedMatrix;
 	}
-	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerRow)
+	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow)
 	{
 		Matrixx appendedMatrix(upperRow);
 		appendedMatrix |= lowerRow;
 		return appendedMatrix;
+	}
+	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix)
+	{
+		outputStream << outputMatrix.str();
+		return outputStream;
 	}
 	
 
@@ -351,7 +394,7 @@ namespace linalg {
 		return width;
 	}
 
-	Roww Matrixx::getRow(int row) const
+	Roww Matrixx::getRow(const int row) const
 	{
 		Roww copyRow(row);
 		for (int col = 0; col < width; col++) {
@@ -359,7 +402,7 @@ namespace linalg {
 		}
 		return copyRow;
 	}
-	Vectorr Matrixx::getColumn(int col) const
+	Vectorr Matrixx::getColumn(const int col) const
 	{
 		Vectorr copyVector(width);
 		for (int row = 0; row < height; row++) {
@@ -382,10 +425,9 @@ namespace linalg {
 
 
 
-	Roww::Roww(int width)
-		: width(width)
+	Roww::Roww(const int width)
 	{
-		entries = new double[width];
+		init(width);
 	}
 	Roww::Roww(const Roww& copyRow)
 		: Roww(copyRow.width)
@@ -400,30 +442,31 @@ namespace linalg {
 	}
 	void Roww::init(int width)
 	{
+		check::LengthInfo lengthInfo{ 1, width };
+		int errorNumber = check::checkWidth(width);
+		check::handleLengthError(errorNumber, lengthInfo);
+
 		this->width = width;
 		entries = new double[width];
 	}
 
-	double& Roww::operator[](int col)
+	double& Roww::operator[](const int col)
 	{
-		return entries[col];
-	}
-	const double& Roww::operator[](int col) const
-	{
-		return entries[col];
-	}
+		check::LengthInfo lengthInfo{ 1, width };
+		check::IndexInfo indexInfo{ 0, col, lengthInfo };
+		int errorNumber = check::checkColumnIndex(col, width);
+		check::handleOutOfRange(errorNumber, indexInfo);
 
-	Roww Roww::operator+() const
-	{
-		return Roww(*this);
+		return entries[col];
 	}
-	Roww Roww::operator-() const
+	const double& Roww::operator[](const int col) const
 	{
-		Roww negativeRow(*this);
-		for (int col = 0; col < width; col++) {
-			negativeRow[col] = preventNegativeZero(-entries[col]);
-		}
-		return negativeRow;
+		check::LengthInfo lengthInfo{ 1, width };
+		check::IndexInfo indexInfo{ 0, col, lengthInfo };
+		int errorNumber = check::checkColumnIndex(col, width);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
+		return entries[col];
 	}
 
 	Allocator& Roww::operator<<(const double value)
@@ -434,8 +477,21 @@ namespace linalg {
 	void Roww::allocate(const int sequence, const double value)
 	{
 		if (sequence < width) {
-			entries[sequence] = preventNegativeZero(value);
+			entries[sequence] = check::preventNegativeZero(value);
 		}
+	}
+
+	Roww Roww::operator+() const
+	{
+		return Roww(*this);
+	}
+	Roww Roww::operator-() const
+	{
+		Roww negativeRow(width);
+		for (int col = 0; col < width; col++) {
+			negativeRow[col] = check::preventNegativeZero(-entries[col]);
+		}
+		return negativeRow;
 	}
 
 	Roww& Roww::operator=(const Roww& rightRow)
@@ -445,7 +501,7 @@ namespace linalg {
 		}
 
 		Roww copyRow(rightRow);
-		linalg::swap(*this, copyRow);
+		swap(*this, copyRow);
 		return *this;
 	}
 	void swap(Roww& leftRow, Roww& rightRow) noexcept
@@ -456,30 +512,34 @@ namespace linalg {
 
 	Roww& Roww::operator+=(const Roww& rightRow)
 	{
-		if (width != rightRow.width) {
-			throw std::logic_error(
-				"Widths do not match : col" + std::to_string(width) + " + col" + std::to_string(rightRow.width) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ 1, width };
+		check::LengthInfo rightLengthInfo{ 1, rightRow.width };
+		check::OperationInfo operationInfo{ '+', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkWidth(width, rightRow.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int col = 0; col < width; col++) {
-			entries[col] = preventNegativeZero(entries[col] + rightRow[col]);
+			entries[col] = check::preventNegativeZero(entries[col] + rightRow[col]);
 		}
 		return *this;
 	}
 	Roww& Roww::operator-=(const Roww& rightRow)
 	{
-		if (width != rightRow.width) {
-			throw std::logic_error(
-				"Widths do not match : col" + std::to_string(width) + " - col" + std::to_string(rightRow.width) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ 1, width };
+		check::LengthInfo rightLengthInfo{ 1, rightRow.width };
+		check::OperationInfo operationInfo{ '-', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkWidth(width, rightRow.width);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int col = 0; col < width; col++) {
-			entries[col] = preventNegativeZero(entries[col] - rightRow[col]);
+			entries[col] = check::preventNegativeZero(entries[col] - rightRow[col]);
 		}
 		return *this;
 	}
 	Roww& Roww::operator*=(const double multiplier)
 	{
 		for (int col = 0; col < width; col++) {
-			entries[col] = preventNegativeZero(multiplier * entries[col]);
+			entries[col] = check::preventNegativeZero(multiplier * entries[col]);
 		}
 		return *this;
 	}
@@ -506,6 +566,11 @@ namespace linalg {
 	{
 		return operator*(multiplier, leftRow);
 	}
+	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow)
+	{
+		outputStream << outputRow.str();
+		return outputStream;
+	}
 
 	const int Roww::getWidth() const
 	{
@@ -524,17 +589,11 @@ namespace linalg {
 
 	
 	
-	
 
 
-
-
-
-
-	linalg::Vectorr::Vectorr(int height)
-		: height(height)
+	linalg::Vectorr::Vectorr(const int height)
 	{
-		entries = new double[height];
+		init(height);
 	}
 	Vectorr::Vectorr(const Vectorr& copyVector)
 		: Vectorr(copyVector.height)
@@ -547,20 +606,35 @@ namespace linalg {
 	{
 		delete[] entries;
 	}
-	void Vectorr::init(int height)
+	void Vectorr::init(const int height)
 	{
+		check::LengthInfo lengthInfo{ height, 1 };
+		int errorNumber = check::checkHeight(height);
+		check::handleLengthError(errorNumber, lengthInfo);
+
 		this->height = height;
 		entries = new double[height];
 	}
 
-	double& Vectorr::operator[](int row)
+	double& Vectorr::operator[](const int row)
 	{
+		check::LengthInfo lengthInfo{ height, 1 };
+		check::IndexInfo indexInfo{ row, 0, lengthInfo };
+		int errorNumber = check::checkRowIndex(row, height);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
 		return entries[row];
 	}
-	const double& Vectorr::operator[](int row) const
+	const double& Vectorr::operator[](const int row) const
 	{
+		check::LengthInfo lengthInfo{ height, 1 };
+		check::IndexInfo indexInfo{ row, 0, lengthInfo };
+		int errorNumber = check::checkRowIndex(row, height);
+		check::handleOutOfRange(errorNumber, indexInfo);
+
 		return entries[row];
 	}
+
 	Allocator& Vectorr::operator<<(const double value)
 	{
 		this->allocate(0, value);
@@ -569,7 +643,7 @@ namespace linalg {
 	void Vectorr::allocate(const int sequence, const double value)
 	{
 		if (sequence < height) {
-			entries[sequence] = preventNegativeZero(value);
+			entries[sequence] = check::preventNegativeZero(value);
 		}
 	}
 
@@ -579,9 +653,9 @@ namespace linalg {
 	}
 	Vectorr Vectorr::operator-() const
 	{
-		Vectorr negativeVector(*this);
+		Vectorr negativeVector(height);
 		for (int row = 0; row < height; row++) {
-			negativeVector[row] = preventNegativeZero(-entries[row]);
+			negativeVector[row] = check::preventNegativeZero(-entries[row]);
 		}
 		return negativeVector;
 	}
@@ -592,8 +666,8 @@ namespace linalg {
 			return *this;
 		}
 
-		Vectorr copyRow(rightVector);
-		linalg::swap(*this, copyRow);
+		Vectorr copyVector(rightVector);
+		swap(*this, copyVector);
 		return *this;
 	}
 	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
@@ -604,30 +678,34 @@ namespace linalg {
 
 	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
 	{
-		if (height != rightVector.height) {
-			throw std::logic_error(
-				"Heights do not match : row" + std::to_string(height) + " + col" + std::to_string(rightVector.height) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ height, 1 };
+		check::LengthInfo rightLengthInfo{ rightVector.height, 1 };
+		check::OperationInfo operationInfo{ '+', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightVector.height);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(entries[row] + rightVector[row]);
+			entries[row] = check::preventNegativeZero(entries[row] + rightVector[row]);
 		}
 		return *this;
 	}
 	Vectorr& Vectorr::operator-=(const Vectorr& rightVector)
 	{
-		if (height != rightVector.height) {
-			throw std::logic_error(
-				"Heights do not match : row" + std::to_string(height) + " - col" + std::to_string(rightVector.height) + "\n");
-		}
+		check::LengthInfo leftLengthInfo{ height, 1 };
+		check::LengthInfo rightLengthInfo{ rightVector.height, 1 };
+		check::OperationInfo operationInfo{ '-', leftLengthInfo, rightLengthInfo };
+		int errorNumber = check::checkHeight(height, rightVector.height);
+		check::handleLogicError(errorNumber, operationInfo);
+		
 		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(entries[row] - rightVector[row]);
+			entries[row] = check::preventNegativeZero(entries[row] - rightVector[row]);
 		}
 		return *this;
 	}
 	Vectorr& Vectorr::operator*=(const double multiplier)
 	{
 		for (int row = 0; row < height; row++) {
-			entries[row] = preventNegativeZero(multiplier * entries[row]);
+			entries[row] = check::preventNegativeZero(multiplier * entries[row]);
 		}
 		return *this;
 	}
@@ -654,6 +732,11 @@ namespace linalg {
 	{
 		return operator*(multiplier, leftVector);
 	}
+	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector)
+	{
+		outputStream << outputVector.str();
+		return outputStream;
+	}
 
 	const int Vectorr::getHeight() const
 	{
@@ -670,75 +753,166 @@ namespace linalg {
 	}
 
 	
-	
-	
 
 
-
-
-
-	double preventNegativeZero(double value)
+	Matrixx identityMatrix(const int length)
 	{
-		return (value == -0.0) ? 0.0 : value;
+		Matrixx identityMatrix(length, length);
+		for (int row = 0; row < length; row++) {
+			for (int col = 0; col < length; col++) {
+				identityMatrix[row][col] = (row == col) ? 1.0 : 0.0;
+			}
+		}
+		return identityMatrix;
 	}
 
-	
-
-	
-
-	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix)
+	Matrixx zeroMatrix(const int height, const int width)
 	{
-		outputStream << outputMatrix.str();
-		return outputStream;
+		Matrixx identityMatrix(height, width);
+		for (int row = 0; row < height; row++) {
+			for (int col = 0; col < width; col++) {
+				identityMatrix[row][col] = 0.0;
+			}
+		}
+		return identityMatrix;
 	}
-	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow)
-	{
-		outputStream << outputRow.str();
-		return outputStream;
-	}
-	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector)
-	{
-		outputStream << outputVector.str();
-		return outputStream;
-	}
-
 	
+	
+	
+	
+	namespace check {
+		const int checkHeight(const int height)
+		{
+			if (height < 1) {
+				return (int)LengthState::InvalidHeight;
+			}
+			return (int)LengthState::NoExcept;
+		}
+		const int checkWidth(const int width)
+		{
+			if (width < 1) {
+				return (int)LengthState::InvalidWidth;
+			}
+			return (int)LengthState::NoExcept;
+		}
+		void handleLengthError(const int errorNumber, const LengthInfo lengthInfo)
+		{
+			switch (errorNumber) {
+			case (int)LengthState::InvalidHeight:
+				throw std::length_error("Bad height : " + std::to_string(lengthInfo.height) + "\n");
+			case (int)LengthState::InvalidWidth:
+				throw std::length_error("Bad width : " + std::to_string(lengthInfo.width) + "\n");
+			case (int)LengthState::InvalidHeightAndWidth:
+				throw std::length_error(
+					"Bad height : " + std::to_string(lengthInfo.height) + "\n"
+					+ "Bad width : " + std::to_string(lengthInfo.width) + "\n");
+			default:
+				return;
+			}
+		}
+
+		const int checkRowIndex(const int row, const int height)
+		{
+			if (row >= height || row < 0) {
+				return (int)IndexState::RowIndexOutOfRange;
+			}
+			return (int)IndexState::NoExcept;
+		}
+		const int checkColumnIndex(const int col, const int width)
+		{
+			if (col >= width || col < 0) {
+				return (int)IndexState::ColumnIndexOutOfRange;
+			}
+			return (int)IndexState::NoExcept;
+		}
+		void handleOutOfRange(const int errorNumber, IndexInfo indexInfo)
+		{
+			switch (errorNumber) {
+			case (int)IndexState::RowIndexOutOfRange:
+				throw std::out_of_range(
+					"Row index out of range(0-" + std::to_string(indexInfo.lengthInfo.height - 1)
+					+ ") : " + std::to_string(indexInfo.row) + "\n");
+			case (int)IndexState::ColumnIndexOutOfRange:
+				throw std::out_of_range(
+					"Column index out of range(0-" + std::to_string(indexInfo.lengthInfo.width - 1)
+					+ ") : " + std::to_string(indexInfo.col) + "\n");
+			case (int)IndexState::BothIndexOutOfRange:
+				throw std::out_of_range(
+					"Row index out of range(0-" + std::to_string(indexInfo.lengthInfo.height - 1)
+					+ ") : " + std::to_string(indexInfo.row) + "\n"
+					+ "Column index out of range(0-" + std::to_string(indexInfo.lengthInfo.width - 1)
+					+ ") : " + std::to_string(indexInfo.col) + "\n");
+			default:
+				return;
+			}
+		}
+
+		const int checkHeight(const int height1, const int height2)
+		{
+			if (height1 != height2) {
+				return (int)OperationState::HeightDoNotMatch;
+			}
+			return (int)OperationState::NoExcept;
+		}
+		const int checkWidth(const int width1, const int width2)
+		{
+			if (width1 != width2) {
+				return (int)OperationState::WidthDoNotMatch;
+			}
+			return (int)OperationState::NoExcept;
+		}
+		const int checkJoinLength(const int width, const int height)
+		{
+			if (width != height) {
+				return (int)OperationState::JoinLengthDoNotMatch;
+			}
+			return (int)OperationState::NoExcept;
+		}
+		void handleLogicError(const int errorNumber, OperationInfo operationInfo)
+		{
+			switch (errorNumber) {
+			case (int)OperationState::HeightDoNotMatch:
+				throw std::length_error(
+					"Height do not match : ("
+					+ std::to_string(operationInfo.lengthInfo1.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo1.width) + ") "
+					+ operationInfo.operation + " ("
+					+ std::to_string(operationInfo.lengthInfo2.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo2.width) + ")\n");
+			case (int)OperationState::WidthDoNotMatch:
+				throw std::length_error(
+					"Width do not match : ("
+					+ std::to_string(operationInfo.lengthInfo1.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo1.width) + ") "
+					+ operationInfo.operation + " ("
+					+ std::to_string(operationInfo.lengthInfo2.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo2.width) + ")\n");
+			case (int)OperationState::BothLengthDoNotMatch:
+				throw std::length_error(
+					"Height and width do not match : ("
+					+ std::to_string(operationInfo.lengthInfo1.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo1.width) + ") "
+					+ operationInfo.operation + " ("
+					+ std::to_string(operationInfo.lengthInfo2.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo2.width) + ")\n");
+			case (int)OperationState::JoinLengthDoNotMatch:
+				throw std::length_error(
+					"Cannot multiply : ("
+					+ std::to_string(operationInfo.lengthInfo1.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo1.width)
+					+ ") * ("
+					+ std::to_string(operationInfo.lengthInfo2.height) + " x "
+					+ std::to_string(operationInfo.lengthInfo2.width) + ")\n");
+			default:
+				return;
+			}
+		}
+
+		double preventNegativeZero(const double value)
+		{
+			return (value == -0.0) ? 0.0 : value;
+		}
 
 
-	//linalg::Celll::Celll(double value)
-	//	: value(value)
-	//{
-	//}
-	///*Celll::Celll(const Celll& copyCell)
-	//	: value(copyCell.get())
-	//{
-	//}*/
-	//linalg::Celll::~Celll()
-	//{
-	//}
-
-	//Celll::operator double() const
-	//{
-	//	return value;
-	//}
-
-	///*Celll& Celll::operator=(const Celll& rightCell)
-	//{
-	//	if (this == &rightCell) {
-	//		return *this;
-	//	}
-
-	//	value = rightCell;
-	//	return *this;
-	//}*/
-
-	//void Celll::set(double value)
-	//{
-	//	this->value = value;
-	//}
-	//const double Celll::get() const
-	//{
-	//	return value;
-	//}
-
+	}
 }

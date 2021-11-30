@@ -1,15 +1,15 @@
 #pragma once
 #include <iostream>
-#include <ostream>
 #include <string>
 
 namespace linalg {
+
+	class Allocator;
+	class Allocatable;
+
 	class Matrixx;
 	class Roww;
 	class Vectorr;
-	//class Celll;
-	class Allocatable;
-	class Allocator;
 
 	class Allocator {
 		friend class Allocatable;
@@ -32,22 +32,23 @@ namespace linalg {
 	class Matrixx : private Allocatable {
 		friend class Roww;
 		friend class Vectorr;
-		//friend class Celll;
 	public:
-		Matrixx(int height, int width);
+		Matrixx(const int height, const int width);
 		Matrixx(const Matrixx& copyMatrix);
 		explicit Matrixx(const Roww& copyRow);
 		explicit Matrixx(const Vectorr& copyVector);
 		~Matrixx();
 
-		Roww& operator[](int row);
-		const Roww& operator[](int row) const;
-		double& operator()(int row, int col) const;
+		Matrixx block(const int beginRow, const int beginCol, const int blockHeight, const int blockWidth) const;
+
+		Roww& operator[](const int row);
+		const Roww& operator[](const int row) const;
+		double& operator()(const int row, const int col) const;
+
+		Allocator& operator<<(const double value);
 
 		Matrixx operator+() const;
 		Matrixx operator-() const;
-
-		Allocator& operator<<(const double value);
 
 		Matrixx& operator=(const Matrixx& rightMatrix);
 		Matrixx& operator+=(const Matrixx& rightMatrix);
@@ -63,8 +64,8 @@ namespace linalg {
 		const int getHeight() const;
 		const int getWidth() const;
 
-		Roww getRow(int row) const;
-		Vectorr getColumn(int col) const;
+		Roww getRow(const int row) const;
+		Vectorr getColumn(const int col) const;
 
 		const std::string str() const;
 
@@ -85,20 +86,19 @@ namespace linalg {
 	class Roww : private Allocatable {
 		friend class Matrixx;
 		friend class Vectorr;
-		//friend class Celll;
 	public:
 		Roww() = default;
-		explicit Roww(int width);
+		explicit Roww(const int width);
 		Roww(const Roww& copyRow);
 		~Roww();
 
-		double& operator[](int col);
-		const double& operator[](int col) const;
+		double& operator[](const int col);
+		const double& operator[](const int col) const;
+
+		Allocator& operator<<(const double value);
 
 		Roww operator+() const;
 		Roww operator-() const;
-
-		Allocator& operator<<(const double value);
 
 		Roww& operator=(const Roww& rightRow);
 		Roww& operator+=(const Roww& rightRow);
@@ -122,20 +122,19 @@ namespace linalg {
 	class Vectorr : private Allocatable {
 		friend class Matrixx;
 		friend class Roww;
-		//friend class Celll;
 	public:
 		Vectorr() = default;
-		explicit Vectorr(int height);
+		explicit Vectorr(const int height);
 		Vectorr(const Vectorr& copyVector);
 		~Vectorr();
 
-		double& operator[](int row);
-		const double& operator[](int row) const;
+		double& operator[](const int row);
+		const double& operator[](const int row) const;
+
+		Allocator& operator<<(const double value);
 
 		Vectorr operator+() const;
 		Vectorr operator-() const;
-
-		Allocator& operator<<(const double value);
 
 		Vectorr& operator=(const Vectorr& rightVector);
 		Vectorr& operator+=(const Vectorr& rightVector);
@@ -151,12 +150,13 @@ namespace linalg {
 		double* entries;
 		int height;
 
-		void init(int height);
+		void init(const int height);
 
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
 
-	double preventNegativeZero(double value);
+	Matrixx identityMatrix(const int length);
+	Matrixx zeroMatrix(const int height, const int width);
 
 	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
@@ -172,7 +172,7 @@ namespace linalg {
 	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
 	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
 	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
-	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerRow);
+	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow);
 
 	Roww operator+(const Roww& leftRow, const Roww& rightRow);
 	Roww operator-(const Roww& leftRow, const Roww& rightRow);
@@ -188,22 +188,53 @@ namespace linalg {
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);
 
-	//class Celll {
-	//	friend class Matrixx;
-	//	friend class Roww;
-	//	friend class Vectorr;
-	//public:
-	//	Celll() = default;
-	//	Celll(double value);
-	//	//Celll(const Celll& copyCell);
-	//	~Celll();
+	namespace check {
+		enum class LengthState {
+			NoExcept = 0,
+			InvalidHeight = 1,
+			InvalidWidth = 2,
+			InvalidHeightAndWidth = 3
+		};
+		struct LengthInfo {
+			int height, width;
+		};
 
-	//	operator double() const;
-	//	//Celll& operator=(const Celll& rightCell);
+		enum class IndexState {
+			NoExcept = 0,
+			RowIndexOutOfRange = 1,
+			ColumnIndexOutOfRange = 2,
+			BothIndexOutOfRange = 3,
+		};
+		struct IndexInfo {
+			int row, col;
+			LengthInfo lengthInfo;
+		};
 
-	//	void set(double value);
-	//	const double get() const;
-	//private:
-	//	double value;
-	//};
+		enum class OperationState {
+			NoExcept = 0,
+			HeightDoNotMatch = 1,
+			WidthDoNotMatch = 2,
+			BothLengthDoNotMatch = 3,
+			JoinLengthDoNotMatch = 4
+		};
+		struct OperationInfo {
+			char operation;
+			LengthInfo lengthInfo1, lengthInfo2;
+		};
+
+		const int checkHeight(const int height);
+		const int checkWidth(const int width);
+		void handleLengthError(const int errorNumber, const LengthInfo lengthInfo);
+
+		const int checkRowIndex(const int row, const int height);
+		const int checkColumnIndex(const int col, const int width);
+		void handleOutOfRange(const int errorNumber, const IndexInfo indexInfo);
+
+		const int checkHeight(const int height1, const int height2);
+		const int checkWidth(const int width1, const int width2);
+		const int checkJoinLength(const int width, const int height);
+		void handleLogicError(const int errorNumber, const OperationInfo operationInfo);
+
+		double preventNegativeZero(const double value);
+	}
 }

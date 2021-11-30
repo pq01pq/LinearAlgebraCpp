@@ -33,34 +33,8 @@ public:
 };
 
 
-
 int main()
 {
-	/*int a[3][3] = {
-		{1, 1, 1},
-		{1, 1, 1},
-		{1, 1, 1}
-	};
-	cout << a[0] << endl;
-	cout << &(a[0][0]) << endl;
-	cout << &(a[0][1]) << endl;
-	cout << &(a[0][2]) << endl;
-	cout << endl;
-	cout << a[1] << endl;
-	cout << &(a[1][0]) << endl;
-	cout << &(a[1][1]) << endl;
-	cout << &(a[1][2]) << endl;
-	cout << endl;
-	cout << a[2] << endl;
-	cout << &(a[2][0]) << endl;
-	cout << &(a[2][1]) << endl;
-	cout << &(a[2][2]) << endl;*/
-
-	/*Out out;
-	cout << &out << endl;
-	cout << out.in->parent << endl;
-	out.removeChild();
-	cout << &out << endl;*/
 	Matrixx matrix(3, 3);
 	matrix <<
 		1, 2, 3,
@@ -74,5 +48,6 @@ int main()
 
 	Matrixx matrix2 = matrix;
 	cout << matrix2;
+
 	
 }
