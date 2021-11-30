@@ -1,12 +1,13 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <vector>
+#include "linalg_exception.h"
 
 namespace linalg {
 
 	class Allocator;
 	class Allocatable;
-
 	class Matrixx;
 	class Roww;
 	class Vectorr;
@@ -27,6 +28,8 @@ namespace linalg {
 		friend class Allocator;
 	protected:
 		virtual void allocate(const int sequence, const double value) {};
+
+		const double convertNegativeZero(const double value) const;
 	};
 
 	class Matrixx : private Allocatable {
@@ -40,6 +43,9 @@ namespace linalg {
 		~Matrixx();
 
 		Matrixx block(const int beginRow, const int beginCol, const int blockHeight, const int blockWidth) const;
+
+		static Matrixx identity(const int length);
+		static Matrixx zero(const int height, const int width);
 
 		Roww& operator[](const int row);
 		const Roww& operator[](const int row) const;
@@ -114,7 +120,7 @@ namespace linalg {
 		double* entries;
 		int width;
 		
-		void init(int width);
+		void init(const int width);
 
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
 	};
@@ -155,8 +161,7 @@ namespace linalg {
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
 
-	Matrixx identityMatrix(const int length);
-	Matrixx zeroMatrix(const int height, const int width);
+	
 
 	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
@@ -188,28 +193,46 @@ namespace linalg {
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);
 
-	namespace check {
+	
+
+	/*class ExceptionHandler {
+	public:
+		ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber);
+		~ExceptionHandler();
+
+		void addArgument(const ExceptionArgument& exceptionArg);
+		void handleException();
+
+		static const int checkValidHeight(const int height);
+		static const int checkValidWidth(const int width);
+
+		static const int checkRowIndex(const int row, const int height);
+		static const int checkColumnIndex(const int col, const int width);
+
+		static const int checkHeight(const int height1, const int height2);
+		static const int checkWidth(const int width1, const int width2);
+		static const int checkJoinLength(const int width, const int height);
+	private:
+		ExceptionState exceptionState;
+		int exceptionNumber;
+		std::vector<ExceptionArgument> exceptionArgs;
+
+		const std::string getLengthErrorString() const;
+		const std::string getOutOfRangeString() const;
+		const std::string getArithmeticExceptionString() const;
+
 		enum class LengthState {
 			NoExcept = 0,
 			InvalidHeight = 1,
 			InvalidWidth = 2,
 			InvalidHeightAndWidth = 3
 		};
-		struct LengthInfo {
-			int height, width;
-		};
-
 		enum class IndexState {
 			NoExcept = 0,
 			RowIndexOutOfRange = 1,
 			ColumnIndexOutOfRange = 2,
 			BothIndexOutOfRange = 3,
 		};
-		struct IndexInfo {
-			int row, col;
-			LengthInfo lengthInfo;
-		};
-
 		enum class OperationState {
 			NoExcept = 0,
 			HeightDoNotMatch = 1,
@@ -217,24 +240,65 @@ namespace linalg {
 			BothLengthDoNotMatch = 3,
 			JoinLengthDoNotMatch = 4
 		};
-		struct OperationInfo {
-			char operation;
-			LengthInfo lengthInfo1, lengthInfo2;
-		};
+	};
 
-		const int checkHeight(const int height);
-		const int checkWidth(const int width);
-		void handleLengthError(const int errorNumber, const LengthInfo lengthInfo);
+	enum class ExceptionState {
+		NoExcept,
+		LengthError,
+		OutOfRange,
+		ArithmeticException
+	};
 
-		const int checkRowIndex(const int row, const int height);
-		const int checkColumnIndex(const int col, const int width);
-		void handleOutOfRange(const int errorNumber, const IndexInfo indexInfo);
+	class ExceptionArgument {
+		friend class ExceptionHandler;
+	public:
+		virtual const std::string str() const { return ""; };
+	};
 
-		const int checkHeight(const int height1, const int height2);
-		const int checkWidth(const int width1, const int width2);
-		const int checkJoinLength(const int width, const int height);
-		void handleLogicError(const int errorNumber, const OperationInfo operationInfo);
+	class LengthArgument : public ExceptionArgument {
+		friend class ExceptionHandler;
+		friend class IndexArgument;
+		friend class OperationArgument;
+	public:
+		LengthArgument(const int height, const int width);
+		~LengthArgument();
 
-		double preventNegativeZero(const double value);
-	}
+		virtual const std::string str() const override;
+	private:
+		int height, width;
+	};
+
+	class RowIndexArgument : public ExceptionArgument {
+		friend class ExceptionHandler;
+	public:
+		RowIndexArgument(const int row, const int height);
+		~RowIndexArgument();
+
+		virtual const std::string str() const override;
+	private:
+		int row, height;
+	};
+
+	class ColumnIndexArgument : public ExceptionArgument {
+		friend class ExceptionHandler;
+	public:
+		ColumnIndexArgument(const int col, const int width);
+		~ColumnIndexArgument();
+
+		virtual const std::string str() const override;
+	private:
+		int col, width;
+	};
+
+	class OperationArgument : public ExceptionArgument {
+		friend class ExceptionHandler;
+	public:
+		OperationArgument(char operation, LengthArgument& lengthArg1, LengthArgument& lengthArg2);
+		~OperationArgument();
+
+		virtual const std::string str() const override;
+	private:
+		char operation;
+		LengthArgument lengthArg1, lengthArg2;
+	};*/
 }
