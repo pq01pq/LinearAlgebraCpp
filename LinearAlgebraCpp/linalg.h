@@ -111,6 +111,8 @@ namespace linalg {
 		Roww& operator-=(const Roww& rightRow);
 		Roww& operator*=(const double multiplier);
 
+		Roww& operator&=(const Roww& rightRow);
+
 		const int getWidth() const;
 
 		const std::string str() const;
@@ -146,6 +148,8 @@ namespace linalg {
 		Vectorr& operator+=(const Vectorr& rightVector);
 		Vectorr& operator-=(const Vectorr& rightVector);
 		Vectorr& operator*=(const double multiplier);
+
+		Vectorr& operator|=(const Vectorr& lowerVector);
 		
 		const int getHeight() const;
 
@@ -172,6 +176,9 @@ namespace linalg {
 	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix);
 	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector);
 
+	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+
 	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
 	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
 	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
@@ -182,10 +189,20 @@ namespace linalg {
 	Roww operator*(const double multiplier, const Roww& rightRow);
 	Roww operator*(const Roww& leftRow, const double multiplier);
 
+	Roww operator&(const Roww& leftRow, const Roww& rightRow);
+
+	bool operator==(const Roww& leftRow, const Roww& rightRow);
+	bool operator!=(const Roww& leftRow, const Roww& rightRow);
+
 	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator-(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator*(const double multiplier, const Vectorr& rightVector);
 	Vectorr operator*(const Vectorr& leftVector, const double multiplier);
+
+	Vectorr operator|(const Vectorr& upperVector, const Vectorr& lowerVector);
+
+	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
+	bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector);
 
 	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);

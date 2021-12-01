@@ -426,6 +426,24 @@ namespace linalg {
 		return appendedMatrix;
 	}
 
+	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		if (leftMatrix.getHeight() != rightMatrix.getHeight() ||
+			leftMatrix.getWidth() != rightMatrix.getWidth()) {
+			return false;
+		}
+		for (int row = 0; row < leftMatrix.getHeight(); row++) {
+			if (leftMatrix[row] != rightMatrix[row]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
+	{
+		return !(leftMatrix == rightMatrix);
+	}
+
 	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix)
 	{
 		Matrixx appendedMatrix(upperMatrix);
@@ -633,6 +651,19 @@ namespace linalg {
 		return *this;
 	}
 
+	Roww& Roww::operator&=(const Roww& rightRow)
+	{
+		Roww appendedRow(width + rightRow.width);
+		for (int col = 0; col < width; col++) {
+			appendedRow[col] = entries[col];
+		}
+		for (int col = width; col < width + rightRow.width; col++) {
+			appendedRow[col] = rightRow[col - width];
+		}
+		swap(*this, appendedRow);
+		return *this;
+	}
+
 	Roww operator+(const Roww& leftRow, const Roww& rightRow)
 	{
 		Roww resultRow(leftRow);
@@ -654,6 +685,28 @@ namespace linalg {
 	Roww operator*(const Roww& leftRow, const double multiplier)
 	{
 		return operator*(multiplier, leftRow);
+	}
+	Roww operator&(const Roww& leftRow, const Roww& rightRow)
+	{
+		Roww appendedRow(leftRow);
+		appendedRow &= rightRow;
+		return appendedRow;
+	}
+	bool operator==(const Roww& leftRow, const Roww& rightRow)
+	{
+		if (leftRow.getWidth() != rightRow.getWidth()) {
+			return false;
+		}
+		for (int col = 0; col < leftRow.getWidth(); col++) {
+			if (leftRow[col] != rightRow[col]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool operator!=(const Roww& leftRow, const Roww& rightRow)
+	{
+		return !(leftRow == rightRow);
 	}
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow)
 	{
@@ -817,6 +870,19 @@ namespace linalg {
 		return *this;
 	}
 
+	Vectorr& Vectorr::operator|=(const Vectorr& lowerVector)
+	{
+		Vectorr appendedVector(height + lowerVector.height);
+		for (int row = 0; row < height; row++) {
+			appendedVector[row] = entries[row];
+		}
+		for (int row = height; row < height + lowerVector.height; row++) {
+			appendedVector[row] = lowerVector[row - height];
+		}
+		swap(*this, appendedVector);
+		return *this;
+	}
+
 	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector)
 	{
 		Vectorr resultVector(leftVector);
@@ -838,6 +904,28 @@ namespace linalg {
 	Vectorr operator*(const Vectorr& leftVector, const double multiplier)
 	{
 		return operator*(multiplier, leftVector);
+	}
+	Vectorr operator|(const Vectorr& upperVector, const Vectorr& lowerVector)
+	{
+		Vectorr appendedVector(upperVector);
+		appendedVector |= lowerVector;
+		return appendedVector;
+	}
+	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector)
+	{
+		if (leftVector.getHeight() != rightVector.getHeight()) {
+			return false;
+		}
+		for (int row = 0; row < leftVector.getHeight(); row++) {
+			if (leftVector[row] != rightVector[row]) {
+				return false;
+			}
+		}
+		return true;
+	}
+	bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector)
+	{
+		return !(leftVector == rightVector);
 	}
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector)
 	{
