@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -10,14 +11,17 @@ namespace linalg {
 	class LengthArgument;
 	class IndexArgument;
 	class OperationArgument;
+	class EtcArgument;
 	enum class ExceptionState;
 
 	class ExceptionHandler {
 	public:
+		ExceptionHandler(const ExceptionState exceptionState);
 		ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber);
 		~ExceptionHandler();
 
-		void addArgument(const ExceptionArgument& exceptionArg);
+		void setExceptionNumber(const int exceptionNumber);
+		void addArgument(ExceptionArgument* exceptionArg);
 		void handleException();
 
 		static const int checkValidHeight(const int height);
@@ -32,11 +36,12 @@ namespace linalg {
 	private:
 		ExceptionState exceptionState;
 		int exceptionNumber;
-		std::vector<ExceptionArgument> exceptionArgs;
+		std::vector<ExceptionArgument*> exceptionArgs;
 
 		const std::string getLengthErrorString() const;
 		const std::string getOutOfRangeString() const;
 		const std::string getArithmeticExceptionString() const;
+		const std::string getEtcExceptionString() const;
 
 		enum class LengthState {
 			NoExcept = 0,
@@ -63,7 +68,8 @@ namespace linalg {
 		NoExcept,
 		LengthError,
 		OutOfRange,
-		ArithmeticException
+		ArithmeticException,
+		EtcException
 	};
 
 	class ExceptionArgument {
@@ -110,12 +116,23 @@ namespace linalg {
 	class OperationArgument : public ExceptionArgument {
 		friend class ExceptionHandler;
 	public:
-		OperationArgument(char operation, LengthArgument& lengthArg1, LengthArgument& lengthArg2);
+		OperationArgument(const char operation, const LengthArgument& lengthArg1, const LengthArgument& lengthArg2);
 		~OperationArgument();
 
 		virtual const std::string str() const override;
 	private:
 		char operation;
 		LengthArgument lengthArg1, lengthArg2;
+	};
+
+	class EtcArgument : public ExceptionArgument {
+		friend class ExceptionHandler;
+	public:
+		EtcArgument(const std::string& what);
+		~EtcArgument();
+
+		virtual const std::string str() const override;
+	private:
+		std::string what;
 	};
 }

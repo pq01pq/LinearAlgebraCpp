@@ -42,10 +42,17 @@ namespace linalg {
 		explicit Matrixx(const Vectorr& copyVector);
 		~Matrixx();
 
+		void reduce();
+		void toEchelonForm();
+		void toReducedEchelonForm();
+
+		friend bool isEchelonForm(const Matrixx& matrix);
+
 		Matrixx block(const int beginRow, const int beginCol, const int blockHeight, const int blockWidth) const;
 
 		static Matrixx identity(const int length);
 		static Matrixx zero(const int height, const int width);
+		Matrixx inverse();
 
 		Roww& operator[](const int row);
 		const Roww& operator[](const int row) const;
@@ -83,8 +90,13 @@ namespace linalg {
 
 		struct Pivot {
 			int row, col;
-			double value;
+			double entry;
 		};
+
+		const Pivot findPivot(const int beginRow, const int beginCol) const;
+		const void replaceRowsUnder(const Pivot pivot);
+		const Pivot getPivot(const int row) const;
+		const void replaceRowsOver(const Pivot pivot);
 
 		friend void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept;
 	};
@@ -176,13 +188,17 @@ namespace linalg {
 	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix);
 	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector);
 
-	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-
 	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
 	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
 	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
 	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow);
+
+	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+
+	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
+
+
 
 	Roww operator+(const Roww& leftRow, const Roww& rightRow);
 	Roww operator-(const Roww& leftRow, const Roww& rightRow);
@@ -194,6 +210,10 @@ namespace linalg {
 	bool operator==(const Roww& leftRow, const Roww& rightRow);
 	bool operator!=(const Roww& leftRow, const Roww& rightRow);
 
+	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
+
+
+
 	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator-(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator*(const double multiplier, const Vectorr& rightVector);
@@ -204,7 +224,5 @@ namespace linalg {
 	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
 	bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector);
 
-	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
-	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);
 }

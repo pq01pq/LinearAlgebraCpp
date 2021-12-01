@@ -2,7 +2,10 @@
 
 
 namespace linalg {
-
+	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState)
+		: exceptionState(exceptionState), exceptionNumber(0)
+	{
+	}
 	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber)
 		: exceptionState(exceptionState), exceptionNumber(exceptionNumber)
 	{
@@ -10,7 +13,11 @@ namespace linalg {
 	ExceptionHandler::~ExceptionHandler()
 	{
 	}
-	void ExceptionHandler::addArgument(const ExceptionArgument& exceptionArg)
+	void ExceptionHandler::setExceptionNumber(const int exceptionNumber)
+	{
+		this->exceptionNumber = exceptionNumber;
+	}
+	void ExceptionHandler::addArgument(ExceptionArgument* exceptionArg)
 	{
 		exceptionArgs.push_back(exceptionArg);
 	}
@@ -23,6 +30,8 @@ namespace linalg {
 			throw std::out_of_range(getOutOfRangeString() + "\n");
 		case ExceptionState::ArithmeticException:
 			throw std::logic_error(getArithmeticExceptionString() + "\n");
+		case ExceptionState::EtcException:
+			throw std::logic_error(getEtcExceptionString() + "\n");
 		default:
 			return;
 		}
@@ -42,7 +51,7 @@ namespace linalg {
 			break;
 		}
 		if (exceptionArgs.size() > 0) {
-			exceptStr += " : " + exceptionArgs[0].str();
+			exceptStr += " : " + exceptionArgs[0]->str();
 		}
 		return exceptStr;
 	}
@@ -61,7 +70,7 @@ namespace linalg {
 		}
 		if (exceptionArgs.size() > 0) {
 			for (int argIndex = 0; argIndex < exceptionArgs.size(); argIndex++) {
-				exceptStr += "\n" + exceptionArgs[argIndex].str();
+				exceptStr += "\n" + exceptionArgs[argIndex]->str();
 			}
 		}
 		return exceptStr;
@@ -82,9 +91,17 @@ namespace linalg {
 			break;
 		}
 		if (exceptionArgs.size() > 0) {
-			exceptStr += " : " + exceptionArgs[0].str();
+			exceptStr += " : " + exceptionArgs[0]->str();
 		}
 		return exceptStr;
+	}
+
+	const std::string ExceptionHandler::getEtcExceptionString() const
+	{
+		if (exceptionArgs.size() > 0) {
+			return exceptionArgs[0]->str();
+		}
+		return "Logic Error";
 	}
 
 	const int ExceptionHandler::checkValidHeight(const int height)
@@ -191,7 +208,8 @@ namespace linalg {
 
 
 
-	OperationArgument::OperationArgument(char operation, LengthArgument& lengthArg1, LengthArgument& lengthArg2)
+	OperationArgument::OperationArgument(const char operation,
+		const LengthArgument& lengthArg1, const LengthArgument& lengthArg2)
 		: operation(operation), lengthArg1(lengthArg1), lengthArg2(lengthArg2)
 	{
 	}
@@ -204,5 +222,20 @@ namespace linalg {
 		return "(" + std::to_string(lengthArg1.height) + " x " + std::to_string(lengthArg1.width) + ") "
 			+ operation
 			+ " (" + std::to_string(lengthArg2.height) + " x " + std::to_string(lengthArg2.width) + ")";
+	}
+
+
+
+
+	EtcArgument::EtcArgument(const std::string& what)
+		: what(what)
+	{
+	}
+	EtcArgument::~EtcArgument()
+	{
+	}
+	const std::string EtcArgument::str() const
+	{
+		return what;
 	}
 }
