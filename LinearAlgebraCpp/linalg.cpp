@@ -10,7 +10,9 @@ namespace linalg {
 	}
 	Allocator& Allocator::operator,(const double value)
 	{
-		target.allocate(sequence, value);
+		if (sequence < target.size()) {
+			target.allocate(sequence, value);
+		}
 		sequence++;
 		return *this;
 	}
@@ -31,7 +33,7 @@ namespace linalg {
 	{
 		int exceptNum = ExceptionHandler::checkValidHeight(height);
 		exceptNum += ExceptionHandler::checkValidWidth(width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)LengthState::NoExcept) {
 			LengthArgument lengthArg(height, width);
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
@@ -125,7 +127,7 @@ namespace linalg {
 	{
 		if (!isEchelonForm(*this)) {
 			EtcArgument etcArg("Cannot reduce non-echelon form matrix.");
-			ExceptionHandler handler(ExceptionState::EtcException);
+			ExceptionHandler handler(ExceptionState::EtcException, (int)EtcState::Exception);
 			handler.addArgument(etcArg);
 			handler.handleException();
 		}
@@ -172,7 +174,7 @@ namespace linalg {
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(beginRow, height);
 		exceptNum += ExceptionHandler::checkColumnIndex(beginCol, width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(beginRow, height);
 			ColumnIndexArgument colIndexArg(beginCol, width);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
@@ -182,7 +184,7 @@ namespace linalg {
 		}
 		exceptNum = ExceptionHandler::checkRowIndex(beginRow + blockHeight - 1, height);
 		exceptNum += ExceptionHandler::checkColumnIndex(beginCol + blockWidth - 1, width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(beginRow + blockHeight - 1, height);
 			ColumnIndexArgument colIndexArg(beginCol + blockWidth - 1, width);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
@@ -225,8 +227,8 @@ namespace linalg {
 	Matrixx Matrixx::inverse()
 	{
 		if (height != width) {
-			EtcArgument etcArg("Cannot get inverse from non-square matrix.");
-			ExceptionHandler handler(ExceptionState::EtcException);
+			EtcArgument etcArg("Cannot get inverse matrix from non-square matrix.");
+			ExceptionHandler handler(ExceptionState::EtcException, (int)EtcState::Exception);
 			handler.addArgument(etcArg);
 			handler.handleException();
 		}
@@ -238,7 +240,7 @@ namespace linalg {
 
 		if (appendedMatrix.block(0, 0, length, length) != identityMatrix) {
 			EtcArgument etcArg("The matrix is not reversible.");
-			ExceptionHandler handler(ExceptionState::EtcException);
+			ExceptionHandler handler(ExceptionState::EtcException, (int)EtcState::Exception);
 			handler.addArgument(etcArg);
 			handler.handleException();
 		}
@@ -249,7 +251,7 @@ namespace linalg {
 	Roww& Matrixx::operator[](const int row)
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(row, height);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
@@ -266,7 +268,7 @@ namespace linalg {
 	const Roww& Matrixx::operator[](const int row) const
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(row, height);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
@@ -283,6 +285,17 @@ namespace linalg {
 
 	double& Matrixx::operator()(const int row, const int col) const
 	{
+		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
+		exceptNum += ExceptionHandler::checkColumnIndex(col, width);
+		if (exceptNum > (int)IndexState::NoExcept) {
+			RowIndexArgument rowIndexArg(row, height);
+			ColumnIndexArgument colIndexArg(col, width);
+			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
 		return rows[row][col];
 	}
 
@@ -293,9 +306,7 @@ namespace linalg {
 	}
 	void Matrixx::allocate(const int sequence, const double value)
 	{
-		if (sequence < height * width) {
-			rows[sequence / width][sequence % width] = convertNegativeZero(value);
-		}
+		rows[sequence / width][sequence % width] = convertNegativeZero(value);
 	}
 
 	Matrixx Matrixx::operator+() const
@@ -334,7 +345,7 @@ namespace linalg {
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
 		exceptNum += ExceptionHandler::checkWidth(width, rightMatrix.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, width);
 			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
@@ -352,7 +363,7 @@ namespace linalg {
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
 		exceptNum += ExceptionHandler::checkWidth(width, rightMatrix.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, width);
 			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
@@ -377,7 +388,7 @@ namespace linalg {
 	Matrixx& Matrixx::operator*=(const Matrixx& rightMatrix)
 	{
 		int exceptNum = ExceptionHandler::checkJoinLength(width, rightMatrix.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, width);
 			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
 			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
@@ -403,7 +414,7 @@ namespace linalg {
 	Matrixx& Matrixx::operator&=(const Matrixx& rightMatrix)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, width);
 			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
 			OperationArgument operationArg('&', leftLengthArg, rightLengthArg);
@@ -429,7 +440,7 @@ namespace linalg {
 	Matrixx& Matrixx::operator&=(const Vectorr& rightVector)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, width);
 			LengthArgument rightLengthArg(rightVector.height, 1);
 			OperationArgument operationArg('&', leftLengthArg, rightLengthArg);
@@ -453,7 +464,7 @@ namespace linalg {
 	Matrixx& Matrixx::operator|=(const Matrixx& lowerMatrix)
 	{
 		int exceptNum = ExceptionHandler::checkWidth(width, lowerMatrix.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument upperLengthArg(height, width);
 			LengthArgument lowerLengthArg(lowerMatrix.height, lowerMatrix.width);
 			OperationArgument operationArg('|', upperLengthArg, lowerLengthArg);
@@ -479,7 +490,7 @@ namespace linalg {
 	Matrixx& Matrixx::operator|=(const Roww& lowerRow)
 	{
 		int exceptNum = ExceptionHandler::checkWidth(width, lowerRow.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument upperLengthArg(height, width);
 			LengthArgument lowerLengthArg(1, lowerRow.width);
 			OperationArgument operationArg('|', upperLengthArg, lowerLengthArg);
@@ -533,7 +544,7 @@ namespace linalg {
 	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector)
 	{
 		int exceptNum = ExceptionHandler::checkJoinLength(leftMatrix.width, rightVector.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(leftMatrix.height, leftMatrix.width);
 			LengthArgument rightLengthArg(rightVector.height, 1);
 			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
@@ -605,11 +616,11 @@ namespace linalg {
 
 	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
 	{
-		if (leftMatrix.getHeight() != rightMatrix.getHeight() ||
-			leftMatrix.getWidth() != rightMatrix.getWidth()) {
+		if (leftMatrix.height != rightMatrix.height ||
+			leftMatrix.width != rightMatrix.width) {
 			return false;
 		}
-		for (int row = 0; row < leftMatrix.getHeight(); row++) {
+		for (int row = 0; row < leftMatrix.height; row++) {
 			if (leftMatrix[row] != rightMatrix[row]) {
 				return false;
 			}
@@ -627,6 +638,10 @@ namespace linalg {
 		return outputStream;
 	}
 	
+	const int Matrixx::size() const
+	{
+		return height * width;
+	}
 	const int Matrixx::getHeight() const
 	{
 		return height;
@@ -685,7 +700,7 @@ namespace linalg {
 	void Roww::init(const int width)
 	{
 		int exceptNum = ExceptionHandler::checkValidWidth(width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)LengthState::NoExcept) {
 			LengthArgument lengthArg(1, width);
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
@@ -699,7 +714,7 @@ namespace linalg {
 	double& Roww::operator[](const int col)
 	{
 		int exceptNum = ExceptionHandler::checkColumnIndex(col, width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			ColumnIndexArgument colIndexArg(col, width);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
@@ -716,7 +731,7 @@ namespace linalg {
 	const double& Roww::operator[](const int col) const
 	{
 		int exceptNum = ExceptionHandler::checkColumnIndex(col, width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			ColumnIndexArgument colIndexArg(col, width);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
@@ -738,9 +753,7 @@ namespace linalg {
 	}
 	void Roww::allocate(const int sequence, const double value)
 	{
-		if (sequence < width) {
-			entries[sequence] = convertNegativeZero(value);
-		}
+		entries[sequence] = convertNegativeZero(value);
 	}
 
 	Roww Roww::operator+() const
@@ -775,7 +788,7 @@ namespace linalg {
 	Roww& Roww::operator+=(const Roww& rightRow)
 	{
 		int exceptNum = ExceptionHandler::checkWidth(width, rightRow.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(1, width);
 			LengthArgument rightLengthArg(1, rightRow.width);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
@@ -792,7 +805,7 @@ namespace linalg {
 	Roww& Roww::operator-=(const Roww& rightRow)
 	{
 		int exceptNum = ExceptionHandler::checkWidth(width, rightRow.width);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(1, width);
 			LengthArgument rightLengthArg(1, rightRow.width);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
@@ -857,10 +870,10 @@ namespace linalg {
 	}
 	bool operator==(const Roww& leftRow, const Roww& rightRow)
 	{
-		if (leftRow.getWidth() != rightRow.getWidth()) {
+		if (leftRow.width != rightRow.width) {
 			return false;
 		}
-		for (int col = 0; col < leftRow.getWidth(); col++) {
+		for (int col = 0; col < leftRow.width; col++) {
 			if (leftRow[col] != rightRow[col]) {
 				return false;
 			}
@@ -877,6 +890,10 @@ namespace linalg {
 		return outputStream;
 	}
 
+	const int Roww::size() const
+	{
+		return width;
+	}
 	const int Roww::getWidth() const
 	{
 		return width;
@@ -914,7 +931,7 @@ namespace linalg {
 	void Vectorr::init(const int height)
 	{
 		int exceptNum = ExceptionHandler::checkValidHeight(height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)LengthState::NoExcept) {
 			LengthArgument lengthArg(height, 1);
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
@@ -928,7 +945,7 @@ namespace linalg {
 	double& Vectorr::operator[](const int row)
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(row, height);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
@@ -945,7 +962,7 @@ namespace linalg {
 	const double& Vectorr::operator[](const int row) const
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)IndexState::NoExcept) {
 			RowIndexArgument rowIndexArg(row, height);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
@@ -967,9 +984,7 @@ namespace linalg {
 	}
 	void Vectorr::allocate(const int sequence, const double value)
 	{
-		if (sequence < height) {
-			entries[sequence] = convertNegativeZero(value);
-		}
+		entries[sequence] = convertNegativeZero(value);
 	}
 
 	Vectorr Vectorr::operator+() const
@@ -1004,7 +1019,7 @@ namespace linalg {
 	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, 1);
 			LengthArgument rightLengthArg(rightVector.height, 1);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
@@ -1021,7 +1036,7 @@ namespace linalg {
 	Vectorr& Vectorr::operator-=(const Vectorr& rightVector)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
-		if (exceptNum > 0) {
+		if (exceptNum > (int)OperationState::NoExcept) {
 			LengthArgument leftLengthArg(height, 1);
 			LengthArgument rightLengthArg(rightVector.height, 1);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
@@ -1086,10 +1101,10 @@ namespace linalg {
 	}
 	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector)
 	{
-		if (leftVector.getHeight() != rightVector.getHeight()) {
+		if (leftVector.height != rightVector.height) {
 			return false;
 		}
-		for (int row = 0; row < leftVector.getHeight(); row++) {
+		for (int row = 0; row < leftVector.height; row++) {
 			if (leftVector[row] != rightVector[row]) {
 				return false;
 			}
@@ -1106,6 +1121,10 @@ namespace linalg {
 		return outputStream;
 	}
 
+	const int Vectorr::size() const
+	{
+		return height;
+	}
 	const int Vectorr::getHeight() const
 	{
 		return height;

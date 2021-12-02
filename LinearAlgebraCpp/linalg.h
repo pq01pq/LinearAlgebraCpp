@@ -26,9 +26,11 @@ namespace linalg {
 
 	class Allocatable {
 		friend class Allocator;
-	protected:
-		virtual void allocate(const int sequence, const double value) {};
 
+		inline virtual const int size() const { return 0; };
+	protected:
+		inline virtual void allocate(const int sequence, const double value) {};
+		
 		const double convertNegativeZero(const double value) const;
 	};
 
@@ -76,6 +78,10 @@ namespace linalg {
 
 		friend Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
 
+		friend bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+
+		virtual const int size() const override;
+
 		const int getHeight() const;
 		const int getWidth() const;
 
@@ -108,7 +114,6 @@ namespace linalg {
 	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix);
 	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier);
 	Matrixx operator*(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
 
 	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 	Matrixx operator&(const Matrixx& leftMatrix, const Vectorr& rightVector);
@@ -120,7 +125,6 @@ namespace linalg {
 	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
 	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow);
 
-	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 
 	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
@@ -149,6 +153,10 @@ namespace linalg {
 
 		Roww& operator&=(const Roww& rightRow);
 
+		friend bool operator==(const Roww& leftRow, const Roww& rightRow);
+
+		virtual const int size() const override;
+
 		const int getWidth() const;
 
 		const std::string str() const;
@@ -170,7 +178,6 @@ namespace linalg {
 
 	Roww operator&(const Roww& leftRow, const Roww& rightRow);
 
-	bool operator==(const Roww& leftRow, const Roww& rightRow);
 	bool operator!=(const Roww& leftRow, const Roww& rightRow);
 
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
@@ -201,6 +208,10 @@ namespace linalg {
 
 		friend Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
 
+		friend bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
+
+		virtual const int size() const override;
+
 		const int getHeight() const;
 
 		const std::string str() const;
@@ -223,7 +234,6 @@ namespace linalg {
 
 	Vectorr operator|(const Vectorr& upperVector, const Vectorr& lowerVector);
 
-	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
 	bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector);
 
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);

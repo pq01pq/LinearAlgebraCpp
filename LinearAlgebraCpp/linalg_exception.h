@@ -9,14 +9,18 @@ namespace linalg {
 	class ExceptionHandler;
 	class ExceptionArgument;
 	class LengthArgument;
-	class IndexArgument;
+	class RowIndexArgument;
+	class ColumnIndexArgument;
 	class OperationArgument;
 	class EtcArgument;
 	enum class ExceptionState;
+	enum class LengthState;
+	enum class IndexState;
+	enum class OperationState;
+	enum class EtcState;
 
 	class ExceptionHandler {
 	public:
-		ExceptionHandler(const ExceptionState exceptionState);
 		ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber);
 		~ExceptionHandler();
 
@@ -42,40 +46,14 @@ namespace linalg {
 		const std::string getOutOfRangeString() const;
 		const std::string getArithmeticExceptionString() const;
 		const std::string getEtcExceptionString() const;
-
-		enum class LengthState {
-			NoExcept = 0,
-			InvalidHeight = 1,
-			InvalidWidth = 2,
-			InvalidHeightAndWidth = 3
-		};
-		enum class IndexState {
-			NoExcept = 0,
-			RowIndexOutOfRange = 1,
-			ColumnIndexOutOfRange = 2,
-			BothIndexOutOfRange = 3,
-		};
-		enum class OperationState {
-			NoExcept = 0,
-			HeightDoNotMatch = 1,
-			WidthDoNotMatch = 2,
-			BothLengthDoNotMatch = 3,
-			JoinLengthDoNotMatch = 4
-		};
 	};
 
-	enum class ExceptionState {
-		NoExcept,
-		LengthError,
-		OutOfRange,
-		ArithmeticException,
-		EtcException
-	};
+
 
 	class ExceptionArgument {
 		friend class ExceptionHandler;
 	public:
-		virtual const std::string str() const { return ""; };
+		inline virtual const std::string str() const { return ""; };
 	};
 
 	class LengthArgument : public ExceptionArgument {
@@ -134,5 +112,39 @@ namespace linalg {
 		virtual const std::string str() const override;
 	private:
 		std::string what;
+	};
+
+
+
+	enum class ExceptionState {
+		NoExcept,
+		LengthError,
+		OutOfRange,
+		ArithmeticException,
+		EtcException
+	};
+
+	enum class LengthState {
+		NoExcept = 0,
+		InvalidHeight = 1,
+		InvalidWidth = 2,
+		InvalidHeightAndWidth = 3
+	};
+	enum class IndexState {
+		NoExcept = 0,
+		RowIndexOutOfRange = 1,
+		ColumnIndexOutOfRange = 2,
+		BothIndexOutOfRange = 3,
+	};
+	enum class OperationState {
+		NoExcept = 0,
+		HeightDoNotMatch = 1,
+		WidthDoNotMatch = 2,
+		BothLengthDoNotMatch = 3,
+		JoinLengthDoNotMatch = 4
+	};
+	enum class EtcState {
+		NoExcept = 0,
+		Exception = 1
 	};
 }

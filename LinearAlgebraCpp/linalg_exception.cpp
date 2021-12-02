@@ -2,10 +2,6 @@
 
 
 namespace linalg {
-	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState)
-		: exceptionState(exceptionState), exceptionNumber(0)
-	{
-	}
 	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber)
 		: exceptionState(exceptionState), exceptionNumber(exceptionNumber)
 	{
@@ -105,7 +101,6 @@ namespace linalg {
 		}
 		return exceptStr;
 	}
-
 	const std::string ExceptionHandler::getEtcExceptionString() const
 	{
 		if (exceptionArgs.size() > 0) {
