@@ -138,7 +138,7 @@ namespace linalg {
 				continue;
 			}
 			replaceRowsOver(pivot);
-			rows[row] *= (1.0 / pivot.entry);
+			rows[row] /= pivot.entry;
 		}
 	}
 	const Matrixx::Pivot Matrixx::getPivot(const int row) const
@@ -384,7 +384,6 @@ namespace linalg {
 		}
 		return *this;
 	}
-
 	Matrixx& Matrixx::operator*=(const Matrixx& rightMatrix)
 	{
 		int exceptNum = ExceptionHandler::checkJoinLength(width, rightMatrix.height);
@@ -408,6 +407,18 @@ namespace linalg {
 			}
 		}
 		linalg::swap(*this, resultMatrix);
+		return *this;
+	}
+	Matrixx& Matrixx::operator/=(const double divisor)
+	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandler handler(ExceptionState::ArithmeticException, (int)OperationState::DivideByZero);
+			handler.handleException();
+		}
+
+		for (int row = 0; row < height; row++) {
+			rows[row] /= divisor;
+		}
 		return *this;
 	}
 
@@ -826,6 +837,18 @@ namespace linalg {
 		}
 		return *this;
 	}
+	Roww& Roww::operator/=(const double divisor)
+	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandler handler(ExceptionState::ArithmeticException, (int)OperationState::DivideByZero);
+			handler.handleException();
+		}
+
+		for (int col = 0; col < width; col++) {
+			entries[col] /= divisor;
+		}
+		return *this;
+	}
 
 	Roww& Roww::operator&=(const Roww& rightRow)
 	{
@@ -1119,6 +1142,19 @@ namespace linalg {
 	{
 		outputStream << outputVector.str();
 		return outputStream;
+	}
+
+	Vectorr& Vectorr::operator/=(const double divisor)
+	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandler handler(ExceptionState::ArithmeticException, (int)OperationState::DivideByZero);
+			handler.handleException();
+		}
+
+		for (int row = 0; row < height; row++) {
+			entries[row] /= divisor;
+		}
+		return *this;
 	}
 
 	const int Vectorr::size() const

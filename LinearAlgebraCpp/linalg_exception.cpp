@@ -93,6 +93,8 @@ namespace linalg {
 		case (int)OperationState::JoinLengthDoNotMatch:
 			exceptStr = "Cannot multiply";
 			break;
+		case (int)OperationState::DivideByZero:
+			return "Divide by zero";
 		default:
 			break;
 		}

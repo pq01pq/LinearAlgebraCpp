@@ -141,7 +141,8 @@ namespace linalg {
 		HeightDoNotMatch = 1,
 		WidthDoNotMatch = 2,
 		BothLengthDoNotMatch = 3,
-		JoinLengthDoNotMatch = 4
+		JoinLengthDoNotMatch = 4,
+		DivideByZero = 8
 	};
 	enum class EtcState {
 		NoExcept = 0,

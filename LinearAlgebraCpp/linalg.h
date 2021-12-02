@@ -70,6 +70,7 @@ namespace linalg {
 		Matrixx& operator-=(const Matrixx& rightMatrix);
 		Matrixx& operator*=(const double multiplier);
 		Matrixx& operator*=(const Matrixx& rightMatrix);
+		Matrixx& operator/=(const double divisor);
 
 		Matrixx& operator&=(const Matrixx& rightMatrix);
 		Matrixx& operator&=(const Vectorr& rightVector);
@@ -150,6 +151,7 @@ namespace linalg {
 		Roww& operator+=(const Roww& rightRow);
 		Roww& operator-=(const Roww& rightRow);
 		Roww& operator*=(const double multiplier);
+		Roww& operator/=(const double divisor);
 
 		Roww& operator&=(const Roww& rightRow);
 
@@ -203,6 +205,7 @@ namespace linalg {
 		Vectorr& operator+=(const Vectorr& rightVector);
 		Vectorr& operator-=(const Vectorr& rightVector);
 		Vectorr& operator*=(const double multiplier);
+		Vectorr& operator/=(const double divisor);
 
 		Vectorr& operator|=(const Vectorr& lowerVector);
 
