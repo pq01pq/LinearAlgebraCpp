@@ -1080,6 +1080,18 @@ namespace linalg {
 		}
 		return *this;
 	}
+	Vectorr& Vectorr::operator/=(const double divisor)
+	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandler handler(ExceptionState::ArithmeticException, (int)OperationState::DivideByZero);
+			handler.handleException();
+		}
+
+		for (int row = 0; row < height; row++) {
+			entries[row] /= divisor;
+		}
+		return *this;
+	}
 
 	Vectorr& Vectorr::operator|=(const Vectorr& lowerVector)
 	{
@@ -1142,19 +1154,6 @@ namespace linalg {
 	{
 		outputStream << outputVector.str();
 		return outputStream;
-	}
-
-	Vectorr& Vectorr::operator/=(const double divisor)
-	{
-		if (convertNegativeZero(divisor) == 0.0) {
-			ExceptionHandler handler(ExceptionState::ArithmeticException, (int)OperationState::DivideByZero);
-			handler.handleException();
-		}
-
-		for (int row = 0; row < height; row++) {
-			entries[row] /= divisor;
-		}
-		return *this;
 	}
 
 	const int Vectorr::size() const
