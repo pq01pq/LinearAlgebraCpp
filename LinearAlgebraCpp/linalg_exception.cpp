@@ -17,9 +17,9 @@ namespace linalg {
 	{
 		this->exceptionNumber = exceptionNumber;
 	}
-	void ExceptionHandler::addArgument(ExceptionArgument* exceptionArg)
+	void ExceptionHandler::addArgument(ExceptionArgument& exceptionArg)
 	{
-		exceptionArgs.push_back(exceptionArg);
+		exceptionArgs.push_back(&exceptionArg);
 	}
 	void ExceptionHandler::handleException()
 	{

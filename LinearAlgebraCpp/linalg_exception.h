@@ -21,7 +21,7 @@ namespace linalg {
 		~ExceptionHandler();
 
 		void setExceptionNumber(const int exceptionNumber);
-		void addArgument(ExceptionArgument* exceptionArg);
+		void addArgument(ExceptionArgument& exceptionArg);
 		void handleException();
 
 		static const int checkValidHeight(const int height);

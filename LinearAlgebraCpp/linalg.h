@@ -74,6 +74,8 @@ namespace linalg {
 		Matrixx& operator|=(const Matrixx& lowerMatrix);
 		Matrixx& operator|=(const Roww& lowerRow);
 
+		friend Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
+
 		const int getHeight() const;
 		const int getWidth() const;
 
@@ -100,6 +102,28 @@ namespace linalg {
 
 		friend void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept;
 	};
+
+	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix);
+	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier);
+	Matrixx operator*(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
+
+	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	Matrixx operator&(const Matrixx& leftMatrix, const Vectorr& rightVector);
+	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix);
+	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector);
+
+	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
+	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
+	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
+	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow);
+
+	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
+
+	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
 
 	class Roww : private Allocatable {
 		friend class Matrixx;
@@ -139,6 +163,18 @@ namespace linalg {
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
 	};
 
+	Roww operator+(const Roww& leftRow, const Roww& rightRow);
+	Roww operator-(const Roww& leftRow, const Roww& rightRow);
+	Roww operator*(const double multiplier, const Roww& rightRow);
+	Roww operator*(const Roww& leftRow, const double multiplier);
+
+	Roww operator&(const Roww& leftRow, const Roww& rightRow);
+
+	bool operator==(const Roww& leftRow, const Roww& rightRow);
+	bool operator!=(const Roww& leftRow, const Roww& rightRow);
+
+	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
+
 	class Vectorr : private Allocatable {
 		friend class Matrixx;
 		friend class Roww;
@@ -162,7 +198,9 @@ namespace linalg {
 		Vectorr& operator*=(const double multiplier);
 
 		Vectorr& operator|=(const Vectorr& lowerVector);
-		
+
+		friend Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
+
 		const int getHeight() const;
 
 		const std::string str() const;
@@ -177,47 +215,11 @@ namespace linalg {
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
 
-	Matrixx operator+(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	Matrixx operator-(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	Matrixx operator*(const double multiplier, const Matrixx& rightMatrix);
-	Matrixx operator*(const Matrixx& leftMatrix, const double multiplier);
-	Matrixx operator*(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-
-	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	Matrixx operator&(const Matrixx& leftMatrix, const Vectorr& rightVector);
-	Matrixx operator&(const Vectorr& leftVector, const Matrixx& rightMatrix);
-	Matrixx operator&(const Vectorr& leftVector, const Vectorr& rightVector);
-
-	Matrixx operator|(const Matrixx& upperMatrix, const Matrixx& lowerMatrix);
-	Matrixx operator|(const Matrixx& upperMatrix, const Roww& lowerRow);
-	Matrixx operator|(const Roww& upperRow, const Matrixx& lowerMatrix);
-	Matrixx operator|(const Roww& upperRow, const Roww& lowerRow);
-
-	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-	bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
-
-	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
-
-
-
-	Roww operator+(const Roww& leftRow, const Roww& rightRow);
-	Roww operator-(const Roww& leftRow, const Roww& rightRow);
-	Roww operator*(const double multiplier, const Roww& rightRow);
-	Roww operator*(const Roww& leftRow, const double multiplier);
-
-	Roww operator&(const Roww& leftRow, const Roww& rightRow);
-
-	bool operator==(const Roww& leftRow, const Roww& rightRow);
-	bool operator!=(const Roww& leftRow, const Roww& rightRow);
-
-	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
-
-
-
 	Vectorr operator+(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator-(const Vectorr& leftVector, const Vectorr& rightVector);
 	Vectorr operator*(const double multiplier, const Vectorr& rightVector);
 	Vectorr operator*(const Vectorr& leftVector, const double multiplier);
+	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector);
 
 	Vectorr operator|(const Vectorr& upperVector, const Vectorr& lowerVector);
 
