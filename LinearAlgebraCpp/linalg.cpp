@@ -256,7 +256,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return rows[row];
+		if (row >= 0) {
+			return rows[row];
+		}
+		else {
+			return rows[height + row];
+		}
 	}
 	const Roww& Matrixx::operator[](const int row) const
 	{
@@ -268,7 +273,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return rows[row];
+		if (row >= 0) {
+			return rows[row];
+		}
+		else {
+			return rows[height + row];
+		}
 	}
 
 	double& Matrixx::operator()(const int row, const int col) const
@@ -606,7 +616,7 @@ namespace linalg {
 
 	Roww Matrixx::getRow(const int row) const
 	{
-		Roww copyRow(row);
+		Roww copyRow(width);
 		for (int col = 0; col < width; col++) {
 			copyRow[col] = rows[row][col];
 		}
@@ -614,7 +624,7 @@ namespace linalg {
 	}
 	Vectorr Matrixx::getColumn(const int col) const
 	{
-		Vectorr copyVector(width);
+		Vectorr copyVector(height);
 		for (int row = 0; row < height; row++) {
 			copyVector[row] = rows[row][col];
 		}
@@ -674,7 +684,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return entries[col];
+		if (col >= 0) {
+			return entries[col];
+		}
+		else {
+			return entries[width + col];
+		}
 	}
 	const double& Roww::operator[](const int col) const
 	{
@@ -686,7 +701,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return entries[col];
+		if (col >= 0) {
+			return entries[col];
+		}
+		else {
+			return entries[width + col];
+		}
 	}
 
 	Allocator& Roww::operator<<(const double value)
@@ -893,7 +913,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return entries[row];
+		if (row >= 0) {
+			return entries[row];
+		}
+		else {
+			return entries[height + row];
+		}
 	}
 	const double& Vectorr::operator[](const int row) const
 	{
@@ -905,7 +930,12 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		return entries[row];
+		if (row >= 0) {
+			return entries[row];
+		}
+		else {
+			return entries[height + row];
+		}
 	}
 
 	Allocator& Vectorr::operator<<(const double value)

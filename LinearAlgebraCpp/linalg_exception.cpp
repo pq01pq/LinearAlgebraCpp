@@ -43,10 +43,13 @@ namespace linalg {
 		switch (exceptionNumber) {
 		case (int)LengthState::InvalidHeight:
 			exceptStr = "Bad height";
+			break;
 		case (int)LengthState::InvalidWidth:
 			exceptStr = "Bad width";
+			break;
 		case (int)LengthState::InvalidHeightAndWidth:
 			exceptStr = "Bad height and width";
+			break;
 		default:
 			break;
 		}
@@ -60,11 +63,14 @@ namespace linalg {
 		std::string exceptStr;
 		switch (exceptionNumber) {
 		case (int)IndexState::RowIndexOutOfRange:
-			exceptStr = "Row index out of range";
+			exceptStr = "Row index out of range.";
+			break;
 		case (int)IndexState::ColumnIndexOutOfRange:
-			exceptStr = "Column index out of range";
+			exceptStr = "Column index out of range.";
+			break;
 		case (int)IndexState::BothIndexOutOfRange:
-			exceptStr = "Row and column index out of range";
+			exceptStr = "Row and column index out of range.";
+			break;
 		default:
 			break;
 		}
@@ -81,12 +87,16 @@ namespace linalg {
 		switch (exceptionNumber) {
 		case (int)OperationState::HeightDoNotMatch:
 			exceptStr = "Height do not match";
+			break;
 		case (int)OperationState::WidthDoNotMatch:
 			exceptStr = "Width do not match";
+			break;
 		case (int)OperationState::BothLengthDoNotMatch:
 			exceptStr = "Height and width do not match";
+			break;
 		case (int)OperationState::JoinLengthDoNotMatch:
 			exceptStr = "Cannot multiply";
+			break;
 		default:
 			break;
 		}
@@ -121,14 +131,14 @@ namespace linalg {
 
 	const int ExceptionHandler::checkRowIndex(const int row, const int height)
 	{
-		if (row >= height || row < 0) {
+		if (row >= height || row < -height) {
 			return (int)IndexState::RowIndexOutOfRange;
 		}
 		return (int)IndexState::NoExcept;
 	}
 	const int ExceptionHandler::checkColumnIndex(const int col, const int width)
 	{
-		if (col >= width || col < 0) {
+		if (col >= width || col < -width) {
 			return (int)IndexState::ColumnIndexOutOfRange;
 		}
 		return (int)IndexState::NoExcept;
@@ -186,7 +196,8 @@ namespace linalg {
 
 	const std::string RowIndexArgument::str() const
 	{
-		return "Row : range(0-" + std::to_string(row - 1) + "), access(" + std::to_string(height) + ")";
+		return "Row : range(" + std::to_string(-height) + " ~ " + std::to_string(height - 1)
+			+ "), access(" + std::to_string(row) + ")";
 	}
 
 
@@ -202,7 +213,8 @@ namespace linalg {
 
 	const std::string ColumnIndexArgument::str() const
 	{
-		return "Column : range(0-" + std::to_string(col - 1) + "), access(" + std::to_string(width) + ")";
+		return "Column : range(" + std::to_string(-width) + " ~ " + std::to_string(width - 1)
+			+ "), access(" + std::to_string(col) + ")";
 	}
 
 
