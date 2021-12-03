@@ -29,23 +29,13 @@ namespace linalg {
 
 
 
+	Matrixx::Matrixx()
+		: height(0), width(0), rows(nullptr)
+	{
+	}
 	Matrixx::Matrixx(const int height, const int width)
 	{
-		int exceptNum = ExceptionHandler::checkValidHeight(height);
-		exceptNum += ExceptionHandler::checkValidWidth(width);
-		if (exceptNum > (int)LengthState::NoExcept) {
-			LengthArgument lengthArg(height, width);
-			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
-			handler.addArgument(lengthArg);
-			handler.handleException();
-		}
-
-		this->height = height;
-		this->width = width;
-		rows = new Roww[height];
-		for (int row = 0; row < height; row++) {
-			rows[row].init(width);
-		}
+		init(height, width);
 	}
 	Matrixx::Matrixx(const Matrixx& copyMatrix)
 		: Matrixx(copyMatrix.height, copyMatrix.width)
@@ -73,6 +63,30 @@ namespace linalg {
 	Matrixx::~Matrixx()
 	{
 		delete[] rows;
+		rows = nullptr;
+	}
+	void Matrixx::init(const int height, const int width)
+	{
+		int exceptNum = ExceptionHandler::checkValidHeight(height);
+		exceptNum += ExceptionHandler::checkValidWidth(width);
+		if (exceptNum > (int)LengthState::NoExcept) {
+			LengthArgument lengthArg(height, width);
+			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
+			handler.addArgument(lengthArg);
+			handler.handleException();
+		}
+
+		if (rows != nullptr) {
+			delete[] rows;
+			rows = nullptr;
+		}
+
+		this->height = height;
+		this->width = width;
+		rows = new Roww[height];
+		for (int row = 0; row < height; row++) {
+			rows[row].init(width);
+		}
 	}
 
 	void Matrixx::reduce()
@@ -693,6 +707,10 @@ namespace linalg {
 
 
 
+	Roww::Roww()
+		: width(0), entries(nullptr)
+	{
+	}
 	Roww::Roww(const int width)
 	{
 		init(width);
@@ -707,6 +725,7 @@ namespace linalg {
 	linalg::Roww::~Roww()
 	{
 		delete[] entries;
+		entries = nullptr;
 	}
 	void Roww::init(const int width)
 	{
@@ -716,6 +735,11 @@ namespace linalg {
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
 			handler.handleException();
+		}
+
+		if (entries != nullptr) {
+			delete[] entries;
+			entries = nullptr;
 		}
 
 		this->width = width;
@@ -936,6 +960,10 @@ namespace linalg {
 	
 
 
+	Vectorr::Vectorr()
+		: height(0), entries(nullptr)
+	{
+	}
 	Vectorr::Vectorr(const int height)
 	{
 		init(height);
@@ -950,6 +978,7 @@ namespace linalg {
 	Vectorr::~Vectorr()
 	{
 		delete[] entries;
+		entries = nullptr;
 	}
 	void Vectorr::init(const int height)
 	{
@@ -959,6 +988,11 @@ namespace linalg {
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
 			handler.handleException();
+		}
+
+		if (entries != nullptr) {
+			delete[] entries;
+			entries = nullptr;
 		}
 
 		this->height = height;

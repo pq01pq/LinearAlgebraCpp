@@ -38,11 +38,13 @@ namespace linalg {
 		friend class Roww;
 		friend class Vectorr;
 	public:
+		Matrixx() = default;
 		Matrixx(const int height, const int width);
 		Matrixx(const Matrixx& copyMatrix);
 		explicit Matrixx(const Roww& copyRow);
 		explicit Matrixx(const Vectorr& copyVector);
 		~Matrixx();
+		void init(const int height, const int width);
 
 		void reduce();
 		void toEchelonForm();
@@ -138,6 +140,7 @@ namespace linalg {
 		explicit Roww(const int width);
 		Roww(const Roww& copyRow);
 		~Roww();
+		void init(const int width);
 
 		double& operator[](const int col);
 		const double& operator[](const int col) const;
@@ -167,8 +170,6 @@ namespace linalg {
 	private:
 		double* entries;
 		int width;
-		
-		void init(const int width);
 
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
 	};
@@ -192,6 +193,7 @@ namespace linalg {
 		explicit Vectorr(const int height);
 		Vectorr(const Vectorr& copyVector);
 		~Vectorr();
+		void init(const int height);
 
 		double& operator[](const int row);
 		const double& operator[](const int row) const;
@@ -223,8 +225,6 @@ namespace linalg {
 	private:
 		double* entries;
 		int height;
-
-		void init(const int height);
 
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
