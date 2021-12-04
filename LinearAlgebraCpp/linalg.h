@@ -38,7 +38,7 @@ namespace linalg {
 		friend class Roww;
 		friend class Vectorr;
 	public:
-		Matrixx() = default;
+		Matrixx();
 		Matrixx(const int height, const int width);
 		Matrixx(const Matrixx& copyMatrix);
 		explicit Matrixx(const Roww& copyRow);
@@ -96,7 +96,7 @@ namespace linalg {
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
-		Roww* rows;
+		std::unique_ptr<Roww[]> rows;
 		int height, width;
 
 		struct Pivot {
@@ -136,7 +136,7 @@ namespace linalg {
 		friend class Matrixx;
 		friend class Vectorr;
 	public:
-		Roww() = default;
+		Roww();
 		explicit Roww(const int width);
 		Roww(const Roww& copyRow);
 		~Roww();
@@ -168,7 +168,7 @@ namespace linalg {
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
-		double* entries;
+		std::unique_ptr<double[]> entries;
 		int width;
 
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
@@ -189,7 +189,7 @@ namespace linalg {
 		friend class Matrixx;
 		friend class Roww;
 	public:
-		Vectorr() = default;
+		Vectorr();
 		explicit Vectorr(const int height);
 		Vectorr(const Vectorr& copyVector);
 		~Vectorr();
@@ -223,7 +223,7 @@ namespace linalg {
 	protected:
 		virtual void allocate(const int sequence, const double value) override;
 	private:
-		double* entries;
+		std::unique_ptr<double[]> entries;
 		int height;
 
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;

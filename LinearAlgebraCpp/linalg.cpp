@@ -62,8 +62,8 @@ namespace linalg {
 	}
 	Matrixx::~Matrixx()
 	{
-		delete[] rows;
-		rows = nullptr;
+		/*delete[] rows;
+		rows = nullptr;*/
 	}
 	void Matrixx::init(const int height, const int width)
 	{
@@ -76,14 +76,15 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		if (rows != nullptr) {
+		/*if (rows != nullptr) {
 			delete[] rows;
 			rows = nullptr;
-		}
-
+		}*/
+		
 		this->height = height;
 		this->width = width;
-		rows = new Roww[height];
+		//rows = new Roww[height];
+		rows = std::make_unique<Roww[]>(height);
 		for (int row = 0; row < height; row++) {
 			rows[row].init(width);
 		}
@@ -724,8 +725,8 @@ namespace linalg {
 	}
 	linalg::Roww::~Roww()
 	{
-		delete[] entries;
-		entries = nullptr;
+		/*delete[] entries;
+		entries = nullptr;*/
 	}
 	void Roww::init(const int width)
 	{
@@ -737,13 +738,14 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		if (entries != nullptr) {
+		/*if (entries != nullptr) {
 			delete[] entries;
 			entries = nullptr;
-		}
+		}*/
 
 		this->width = width;
-		entries = new double[width];
+		//entries = new double[width];
+		entries = std::make_unique<double[]>(width);
 	}
 
 	double& Roww::operator[](const int col)
@@ -977,8 +979,8 @@ namespace linalg {
 	}
 	Vectorr::~Vectorr()
 	{
-		delete[] entries;
-		entries = nullptr;
+		/*delete[] entries;
+		entries = nullptr;*/
 	}
 	void Vectorr::init(const int height)
 	{
@@ -990,13 +992,14 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		if (entries != nullptr) {
+		/*if (entries != nullptr) {
 			delete[] entries;
 			entries = nullptr;
-		}
+		}*/
 
 		this->height = height;
-		entries = new double[height];
+		//entries = new double[height];
+		entries = std::make_unique<double[]>(height);
 	}
 
 	double& Vectorr::operator[](const int row)
