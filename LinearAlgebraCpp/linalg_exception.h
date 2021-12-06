@@ -81,7 +81,7 @@ namespace linalg {
 	/*
 	* "다운캐스팅이 있다는 것은 디자인이 잘못된 것을 의미하기 때문에
 	*  전문 C++ 프로그래머는 다운캐스팅을 부정적으로 본다."
-	*  - [마크 그레고리] 전문가를 위한 C++ 446p -
+	*  - [Marc Gregoire] Professional C++ (전문가를 위한 C++) 10.3.4 -
 	*/
 
 	// Length allocation exception argument

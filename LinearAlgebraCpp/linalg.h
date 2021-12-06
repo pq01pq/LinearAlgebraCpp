@@ -139,7 +139,7 @@ namespace linalg {
 
 		/*
 		* "컴퓨터 프로그램은 보통 한 열에서 가장 절댓값이 큰 성분을 추축으로 선정한다."
-		* - [David C. Lay et al] Linear Algebra and Its Applications 21p -
+		* - [David C. Lay et al] Linear Algebra and Its Applications (선형대수학) 1.2 -
 		*/
 		const Pivot findPivot(const int beginRow, const int beginCol) const; // Find largest absolute value of entries
 		const void replaceRowsUnder(const Pivot pivot); // Row replacing operation in forward phase
