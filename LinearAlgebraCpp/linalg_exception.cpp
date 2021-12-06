@@ -9,6 +9,10 @@ namespace linalg {
 	ExceptionHandler::~ExceptionHandler()
 	{
 	}
+	void ExceptionHandler::setExceptionState(const ExceptionState exceptionState)
+	{
+		this->exceptionState = exceptionState;
+	}
 	void ExceptionHandler::setExceptionNumber(const int exceptionNumber)
 	{
 		this->exceptionNumber = exceptionNumber;

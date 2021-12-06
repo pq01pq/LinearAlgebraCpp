@@ -10,9 +10,7 @@ namespace linalg {
 	}
 	Allocator& Allocator::operator,(const double value)
 	{
-		if (sequence < target.size()) {
-			target.allocate(sequence, value);
-		}
+		target.allocate(sequence, value);
 		sequence++;
 		return *this;
 	}
@@ -20,7 +18,24 @@ namespace linalg {
 
 
 
-	const double Allocatable::convertNegativeZero(const double value) const
+	
+	LinalgContainer::LinalgContainer()
+		: mSize(0)
+	{
+	}
+	LinalgContainer::LinalgContainer(int size)
+		: mSize(size)
+	{
+	}
+	LinalgContainer::~LinalgContainer()
+	{
+	}
+
+	const int LinalgContainer::size() const
+	{
+		return mSize;
+	}
+	const double LinalgContainer::convertNegativeZero(const double value) const
 	{
 		return (value == -0.0) ? 0.0 : value;
 	}
@@ -30,40 +45,40 @@ namespace linalg {
 
 
 	Matrixx::Matrixx()
-		: height(0), width(0), rows(nullptr)
+		: LinalgContainer(0),
+		mHeight(0), mWidth(0), mRows(nullptr)
 	{
 	}
 	Matrixx::Matrixx(const int height, const int width)
+		: LinalgContainer(height * width)
 	{
 		init(height, width);
 	}
 	Matrixx::Matrixx(const Matrixx& copyMatrix)
-		: Matrixx(copyMatrix.height, copyMatrix.width)
+		: Matrixx(copyMatrix.mHeight, copyMatrix.mWidth)
 	{
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				rows[row][col] = copyMatrix[row][col];
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				mRows[row][col] = copyMatrix[row][col];
 			}
 		}
 	}
 	Matrixx::Matrixx(const Roww& copyRow)
-		: Matrixx(1, copyRow.width)
+		: Matrixx(1, copyRow.mSize)
 	{
-		for (int col = 0; col < height; col++) {
-			rows[0][col] = copyRow[col];
+		for (int col = 0; col < mHeight; col++) {
+			mRows[0][col] = copyRow[col];
 		}
 	}
 	Matrixx::Matrixx(const Vectorr& copyVector)
-		: Matrixx(copyVector.height, 1)
+		: Matrixx(copyVector.mSize, 1)
 	{
-		for (int row = 0; row < height; row++) {
-			rows[row][0] = copyVector[row];
+		for (int row = 0; row < mHeight; row++) {
+			mRows[row][0] = copyVector[row];
 		}
 	}
 	Matrixx::~Matrixx()
 	{
-		/*delete[] rows;
-		rows = nullptr;*/
 	}
 	void Matrixx::init(const int height, const int width)
 	{
@@ -75,18 +90,12 @@ namespace linalg {
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
-
-		/*if (rows != nullptr) {
-			delete[] rows;
-			rows = nullptr;
-		}*/
 		
-		this->height = height;
-		this->width = width;
-		//rows = new Roww[height];
-		rows = std::make_unique<Roww[]>(height);
+		mHeight = height;
+		mWidth = width;
+		mRows = std::make_unique<Roww[]>(height);
 		for (int row = 0; row < height; row++) {
-			rows[row].init(width);
+			mRows[row].init(width);
 		}
 	}
 
@@ -99,15 +108,19 @@ namespace linalg {
 	void Matrixx::toEchelonForm()
 	{
 		int beginRow = 0, beginCol = 0;
-		while (beginRow < height && beginCol < width) {
+		while (beginRow < mHeight && beginCol < mWidth) {
+			// 1. Find largest absolute value of entries
 			Pivot pivot = findPivot(beginRow, beginCol);
-			if (pivot.row >= height || pivot.col >= width) {
+			if (pivot.row >= mHeight || pivot.col >= mWidth) {
+				// No more pivot
 				break;
 			}
 
-			std::swap(rows[beginRow], rows[pivot.row]);
+			// 2. Switch rows to locate pivot into current row
+			std::swap(mRows[beginRow], mRows[pivot.row]);
 			pivot.row = beginRow;
 
+			// 3. Set zeros under pivot
 			replaceRowsUnder(pivot);
 
 			beginRow++;
@@ -117,24 +130,24 @@ namespace linalg {
 	const Matrixx::Pivot Matrixx::findPivot(const int beginRow, const int beginCol) const
 	{
 		double maxAbsoluteEntry = 0.0;
-		int maxAbsoluteRow = height;
-		for (int col = beginCol; col < width; col++) {
-			for (int row = beginRow; row < height; row++) {
-				if (abs(rows[row][col]) > maxAbsoluteEntry) {
-					maxAbsoluteEntry = abs(rows[row][col]);
+		int maxAbsoluteRow = mHeight;
+		for (int col = beginCol; col < mWidth; col++) {
+			for (int row = beginRow; row < mHeight; row++) {
+				if (abs(mRows[row][col]) > maxAbsoluteEntry) {
+					maxAbsoluteEntry = abs(mRows[row][col]);
 					maxAbsoluteRow = row;
 				}
 			}
-			if (maxAbsoluteRow >= beginRow && maxAbsoluteRow < height) {
-				return Pivot{ maxAbsoluteRow, col, rows[maxAbsoluteRow][col] };
+			if (maxAbsoluteRow >= beginRow && maxAbsoluteRow < mHeight) {
+				return Pivot{ maxAbsoluteRow, col, mRows[maxAbsoluteRow][col] };
 			}
 		}
-		return Pivot{ height, width, 0.0 };
+		return Pivot{ mHeight, mWidth, 0.0 }; // Dummy index and value
 	}
 	const void Matrixx::replaceRowsUnder(const Pivot pivot)
 	{
-		for (int row = pivot.row + 1; row < height; row++) {
-			rows[row] -= (rows[row][pivot.col] / pivot.entry) * rows[pivot.row];
+		for (int row = pivot.row + 1; row < mHeight; row++) {
+			mRows[row] -= (mRows[row][pivot.col] / pivot.entry) * mRows[pivot.row];
 		}
 	}
 
@@ -147,37 +160,40 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		for (int row = height - 1; row >= 0; row--) {
+		for (int row = mHeight - 1; row >= 0; row--) {
 			Pivot pivot = getPivot(row);
-			if (pivot.col >= width) {
+			if (pivot.col >= mWidth) {
+				// When trying to find pivot in zero rows
 				continue;
 			}
+			// 4. Set zeros over pivot
 			replaceRowsOver(pivot);
-			rows[row] /= pivot.entry;
+			// 5. Set pivot as 1
+			mRows[row] /= pivot.entry;
 		}
 	}
 	const Matrixx::Pivot Matrixx::getPivot(const int row) const
 	{
-		for (int col = 0; col < width; col++) {
-			if (rows[row][col] != 0.0) {
-				return Pivot{ row, col, rows[row][col] };
+		for (int col = 0; col < mWidth; col++) {
+			if (mRows[row][col] != 0.0) {
+				return Pivot{ row, col, mRows[row][col] };
 			}
 		}
-		return Pivot{ row, width, 0.0 };
+		return Pivot{ row, mWidth, 0.0 }; // Dummy index and value
 	}
 	const void Matrixx::replaceRowsOver(const Pivot pivot)
 	{
 		for (int row = pivot.row - 1; row >= 0; row--) {
-			rows[row] -= (rows[row][pivot.col] / pivot.entry) * rows[pivot.row];
+			mRows[row] -= (mRows[row][pivot.col] / pivot.entry) * mRows[pivot.row];
 		}
 	}
 
 	bool isEchelonForm(const Matrixx& matrix)
 	{
 		Matrixx::Pivot prePivot{ -1, -1, 0.0 };
-		for (int row = 0; row < matrix.height; row++) {
+		for (int row = 0; row < matrix.mHeight; row++) {
 			Matrixx::Pivot curPivot = matrix.getPivot(row);
-			if (curPivot.col < matrix.width && curPivot.col <= prePivot.col) {
+			if (curPivot.col < matrix.mWidth && curPivot.col <= prePivot.col) {
 				return false;
 			}
 			prePivot = curPivot;
@@ -187,21 +203,21 @@ namespace linalg {
 
 	Matrixx Matrixx::block(const int beginRow, const int beginCol, const int blockHeight, const int blockWidth) const
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(beginRow, height);
-		exceptNum += ExceptionHandler::checkColumnIndex(beginCol, width);
+		int exceptNum = ExceptionHandler::checkRowIndex(beginRow, mHeight);
+		exceptNum += ExceptionHandler::checkColumnIndex(beginCol, mWidth);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(beginRow, height);
-			ColumnIndexArgument colIndexArg(beginCol, width);
+			RowIndexArgument rowIndexArg(beginRow, mHeight);
+			ColumnIndexArgument colIndexArg(beginCol, mWidth);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
 		}
-		exceptNum = ExceptionHandler::checkRowIndex(beginRow + blockHeight - 1, height);
-		exceptNum += ExceptionHandler::checkColumnIndex(beginCol + blockWidth - 1, width);
+		exceptNum = ExceptionHandler::checkRowIndex(beginRow + blockHeight - 1, mHeight);
+		exceptNum += ExceptionHandler::checkColumnIndex(beginCol + blockWidth - 1, mWidth);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(beginRow + blockHeight - 1, height);
-			ColumnIndexArgument colIndexArg(beginCol + blockWidth - 1, width);
+			RowIndexArgument rowIndexArg(beginRow + blockHeight - 1, mHeight);
+			ColumnIndexArgument colIndexArg(beginCol + blockWidth - 1, mWidth);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.addArgument(colIndexArg);
@@ -211,7 +227,7 @@ namespace linalg {
 		Matrixx blockMatrix(blockHeight, blockWidth);
 		for (int row = 0; row < blockHeight; row++) {
 			for (int col = 0; col < blockWidth; col++) {
-				blockMatrix[row][col] = rows[beginRow + row][beginCol + col];
+				blockMatrix[row][col] = mRows[beginRow + row][beginCol + col];
 			}
 		}
 		return blockMatrix;
@@ -241,14 +257,14 @@ namespace linalg {
 
 	Matrixx Matrixx::inverse()
 	{
-		if (height != width) {
+		if (mHeight != mWidth) {
 			EtcArgument etcArg("Cannot get inverse matrix from non-square matrix.");
 			ExceptionHandler handler(ExceptionState::EtcException, (int)EtcState::Exception);
 			handler.addArgument(etcArg);
 			handler.handleException();
 		}
 
-		int length = height;
+		int length = mHeight;
 		Matrixx identityMatrix = identity(length);
 		Matrixx appendedMatrix = *this & identityMatrix;
 		appendedMatrix.reduce();
@@ -265,63 +281,81 @@ namespace linalg {
 
 	Roww& Matrixx::operator[](const int row)
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(row, height);
+			RowIndexArgument rowIndexArg(row, mHeight);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
 		}
 
 		if (row >= 0) {
-			return rows[row];
+			return mRows[row];
 		}
 		else {
-			return rows[height + row];
+			return mRows[mHeight + row];
 		}
 	}
 	const Roww& Matrixx::operator[](const int row) const
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(row, height);
+			RowIndexArgument rowIndexArg(row, mHeight);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
 		}
 
 		if (row >= 0) {
-			return rows[row];
+			return mRows[row];
 		}
 		else {
-			return rows[height + row];
+			return mRows[mHeight + row];
 		}
 	}
 
 	double& Matrixx::operator()(const int row, const int col) const
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
-		exceptNum += ExceptionHandler::checkColumnIndex(col, width);
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
+		exceptNum += ExceptionHandler::checkColumnIndex(col, mWidth);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(row, height);
-			ColumnIndexArgument colIndexArg(col, width);
+			RowIndexArgument rowIndexArg(row, mHeight);
+			ColumnIndexArgument colIndexArg(col, mWidth);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
 		}
 
-		return rows[row][col];
+		if (row >= 0) {
+			return mRows[row][col];
+		}
+		else {
+			return mRows[mHeight + row][col];
+		}
 	}
 
+	Matrixx& Matrixx::operator=(std::initializer_list<double> values)
+	{
+		int sequence = 0;
+		for (double value : values) {
+			if (sequence < mSize) {
+				allocate(sequence, value);
+			}
+			sequence++;
+		}
+		return *this;
+	}
 	Allocator& Matrixx::operator<<(const double value)
 	{
-		this->allocate(0, value);
+		allocate(0, value);
 		return *(new Allocator(*this, 1));
 	}
 	void Matrixx::allocate(const int sequence, const double value)
 	{
-		rows[sequence / width][sequence % width] = convertNegativeZero(value);
+		if (sequence < mSize) {
+			mRows[sequence / mWidth][sequence % mWidth] = convertNegativeZero(value);
+		}
 	}
 
 	Matrixx Matrixx::operator+() const
@@ -331,14 +365,20 @@ namespace linalg {
 	Matrixx Matrixx::operator-() const
 	{
 		Matrixx negativeMatrix(*this);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				negativeMatrix[row][col] = convertNegativeZero(-rows[row][col]);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				negativeMatrix[row][col] = convertNegativeZero(-mRows[row][col]);
 			}
 		}
 		return negativeMatrix;
 	}
 
+	void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept
+	{
+		std::swap(leftMatrix.mRows, rightMatrix.mRows);
+		std::swap(leftMatrix.mHeight, rightMatrix.mHeight);
+		std::swap(leftMatrix.mWidth, rightMatrix.mWidth);
+	}
 	Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
 	{
 		if (this == &rightMatrix) {
@@ -349,76 +389,73 @@ namespace linalg {
 		swap(*this, copyMatrix);
 		return *this;
 	}
-	void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept
-	{
-		std::swap(leftMatrix.rows, rightMatrix.rows);
-		std::swap(leftMatrix.height, rightMatrix.height);
-		std::swap(leftMatrix.width, rightMatrix.width);
-	}
-
 	Matrixx& Matrixx::operator+=(const Matrixx& rightMatrix)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
-		exceptNum += ExceptionHandler::checkWidth(width, rightMatrix.width);
+		int exceptNum = ExceptionHandler::checkHeight(mHeight, rightMatrix.mHeight);
+		exceptNum += ExceptionHandler::checkWidth(mWidth, rightMatrix.mWidth);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, width);
-			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrix.mHeight, rightMatrix.mWidth);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		for (int row = 0; row < height; row++) {
-			rows[row] += rightMatrix[row];
+		Matrixx resultMatrix(*this);
+		for (int row = 0; row < mHeight; row++) {
+			resultMatrix[row] += rightMatrix[row];
 		}
+		swap(*this, resultMatrix);
 		return *this;
 	}
 	Matrixx& Matrixx::operator-=(const Matrixx& rightMatrix)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
-		exceptNum += ExceptionHandler::checkWidth(width, rightMatrix.width);
+		int exceptNum = ExceptionHandler::checkHeight(mHeight, rightMatrix.mHeight);
+		exceptNum += ExceptionHandler::checkWidth(mWidth, rightMatrix.mWidth);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, width);
-			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrix.mHeight, rightMatrix.mWidth);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		for (int row = 0; row < height; row++) {
-			rows[row] -= rightMatrix[row];
+		Matrixx resultMatrix(*this);
+		for (int row = 0; row < mHeight; row++) {
+			resultMatrix[row] -= rightMatrix[row];
 		}
+		swap(*this, resultMatrix);
 		return *this;
 	}
 	Matrixx& Matrixx::operator*=(const double multiplier)
 	{
-		for (int row = 0; row < height; row++) {
-			rows[row] *= multiplier;
+		for (int row = 0; row < mHeight; row++) {
+			mRows[row] *= multiplier;
 		}
 		return *this;
 	}
 	Matrixx& Matrixx::operator*=(const Matrixx& rightMatrix)
 	{
-		int exceptNum = ExceptionHandler::checkJoinLength(width, rightMatrix.height);
+		int exceptNum = ExceptionHandler::checkJoinLength(mWidth, rightMatrix.mHeight);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, width);
-			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrix.mHeight, rightMatrix.mWidth);
 			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		Matrixx resultMatrix(height, rightMatrix.width);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < rightMatrix.width; col++) {
-				double product = 0.0;
-				for (int join = 0; join < width; join++) {
-					product += rows[row][join] * rightMatrix[join][col];
+		Matrixx resultMatrix(mHeight, rightMatrix.mWidth);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < rightMatrix.mWidth; col++) {
+				double dotProduct = 0.0;
+				for (int join = 0; join < mWidth; join++) {
+					dotProduct += mRows[row][join] * rightMatrix[join][col];
 				}
-				resultMatrix[row][col] = convertNegativeZero(product);
+				resultMatrix[row][col] = convertNegativeZero(dotProduct);
 			}
 		}
 		linalg::swap(*this, resultMatrix);
@@ -431,33 +468,35 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		for (int row = 0; row < height; row++) {
-			rows[row] /= divisor;
+		Matrixx resultMatrix(*this);
+		for (int row = 0; row < mHeight; row++) {
+			resultMatrix[row] /= divisor;
 		}
+		swap(*this, resultMatrix);
 		return *this;
 	}
 
 	Matrixx& Matrixx::operator&=(const Matrixx& rightMatrix)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightMatrix.height);
+		int exceptNum = ExceptionHandler::checkHeight(mHeight, rightMatrix.mHeight);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, width);
-			LengthArgument rightLengthArg(rightMatrix.height, rightMatrix.width);
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrix.mHeight, rightMatrix.mWidth);
 			OperationArgument operationArg('&', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		Matrixx appendedMatrix(height, width + rightMatrix.width);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				appendedMatrix[row][col] = rows[row][col];
+		Matrixx appendedMatrix(mHeight, mWidth + rightMatrix.mWidth);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				appendedMatrix[row][col] = mRows[row][col];
 			}
 		}
-		for (int row = 0; row < height; row++) {
-			for (int col = width; col < width + rightMatrix.width; col++) {
-				appendedMatrix[row][col] = rightMatrix[row][col - width];
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = mWidth; col < mWidth + rightMatrix.mWidth; col++) {
+				appendedMatrix[row][col] = rightMatrix[row][col - mWidth];
 			}
 		}
 		linalg::swap(*this, appendedMatrix);
@@ -465,49 +504,49 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator&=(const Vectorr& rightVector)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
+		int exceptNum = ExceptionHandler::checkHeight(mHeight, rightVector.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, width);
-			LengthArgument rightLengthArg(rightVector.height, 1);
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightVector.mSize, 1);
 			OperationArgument operationArg('&', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		Matrixx appendedMatrix(height, width + 1);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				appendedMatrix[row][col] = rows[row][col];
+		Matrixx appendedMatrix(mHeight, mWidth + 1);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				appendedMatrix[row][col] = mRows[row][col];
 			}
 		}
-		for (int row = 0; row < height; row++) {
-			appendedMatrix[row][width] = rightVector[row];
+		for (int row = 0; row < mHeight; row++) {
+			appendedMatrix[row][mWidth] = rightVector[row];
 		}
 		linalg::swap(*this, appendedMatrix);
 		return *this;
 	}
 	Matrixx& Matrixx::operator|=(const Matrixx& lowerMatrix)
 	{
-		int exceptNum = ExceptionHandler::checkWidth(width, lowerMatrix.width);
+		int exceptNum = ExceptionHandler::checkWidth(mWidth, lowerMatrix.mWidth);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument upperLengthArg(height, width);
-			LengthArgument lowerLengthArg(lowerMatrix.height, lowerMatrix.width);
+			LengthArgument upperLengthArg(mHeight, mWidth);
+			LengthArgument lowerLengthArg(lowerMatrix.mHeight, lowerMatrix.mWidth);
 			OperationArgument operationArg('|', upperLengthArg, lowerLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		Matrixx appendedMatrix(height + lowerMatrix.height, width);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				appendedMatrix[row][col] = rows[row][col];
+		Matrixx appendedMatrix(mHeight + lowerMatrix.mHeight, mWidth);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				appendedMatrix[row][col] = mRows[row][col];
 			}
 		}
-		for (int row = height; row < height + lowerMatrix.height; row++) {
-			for (int col = 0; col < width; col++) {
-				appendedMatrix[row][col] = lowerMatrix[row - height][col];
+		for (int row = mHeight; row < mHeight + lowerMatrix.mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				appendedMatrix[row][col] = lowerMatrix[row - mHeight][col];
 			}
 		}
 		linalg::swap(*this, appendedMatrix);
@@ -515,24 +554,24 @@ namespace linalg {
 	}
 	Matrixx& Matrixx::operator|=(const Roww& lowerRow)
 	{
-		int exceptNum = ExceptionHandler::checkWidth(width, lowerRow.width);
+		int exceptNum = ExceptionHandler::checkWidth(mWidth, lowerRow.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument upperLengthArg(height, width);
-			LengthArgument lowerLengthArg(1, lowerRow.width);
+			LengthArgument upperLengthArg(mHeight, mWidth);
+			LengthArgument lowerLengthArg(1, lowerRow.mSize);
 			OperationArgument operationArg('|', upperLengthArg, lowerLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		Matrixx appendedMatrix(height + 1, width);
-		for (int row = 0; row < height; row++) {
-			for (int col = 0; col < width; col++) {
-				appendedMatrix[row][col] = rows[row][col];
+		Matrixx appendedMatrix(mHeight + 1, mWidth);
+		for (int row = 0; row < mHeight; row++) {
+			for (int col = 0; col < mWidth; col++) {
+				appendedMatrix[row][col] = mRows[row][col];
 			}
 		}
-		for (int col = 0; col < width; col++) {
-			appendedMatrix[height][col] = lowerRow[col];
+		for (int col = 0; col < mWidth; col++) {
+			appendedMatrix[mHeight][col] = lowerRow[col];
 		}
 		linalg::swap(*this, appendedMatrix);
 		return *this;
@@ -567,25 +606,31 @@ namespace linalg {
 		resultMatrix *= rightMatrix;
 		return resultMatrix;
 	}
+	Matrixx operator/(const Matrixx& leftMatrix, const double divisor)
+	{
+		Matrixx resultMatrix(leftMatrix);
+		resultMatrix /= divisor;
+		return resultMatrix;
+	}
 	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector)
 	{
-		int exceptNum = ExceptionHandler::checkJoinLength(leftMatrix.width, rightVector.height);
+		int exceptNum = ExceptionHandler::checkJoinLength(leftMatrix.mWidth, rightVector.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(leftMatrix.height, leftMatrix.width);
-			LengthArgument rightLengthArg(rightVector.height, 1);
+			LengthArgument leftLengthArg(leftMatrix.mHeight, leftMatrix.mWidth);
+			LengthArgument rightLengthArg(rightVector.mSize, 1);
 			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 
-		Vectorr resultVector(leftMatrix.height);
-		for (int row = 0; row < leftMatrix.height; row++) {
-			double innerProduct = 0.0;
-			for (int join = 0; join < leftMatrix.width; join++) {
-				innerProduct += leftMatrix[row][join] * rightVector[join];
+		Vectorr resultVector(leftMatrix.mHeight);
+		for (int row = 0; row < leftMatrix.mHeight; row++) {
+			double dotProduct = 0.0;
+			for (int join = 0; join < leftMatrix.mWidth; join++) {
+				dotProduct += leftMatrix[row][join] * rightVector[join];
 			}
-			resultVector[row] = innerProduct;
+			resultVector[row] = dotProduct;
 		}
 		return resultVector;
 	}
@@ -642,11 +687,11 @@ namespace linalg {
 
 	bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
 	{
-		if (leftMatrix.height != rightMatrix.height ||
-			leftMatrix.width != rightMatrix.width) {
+		if (leftMatrix.mHeight != rightMatrix.mHeight ||
+			leftMatrix.mWidth != rightMatrix.mWidth) {
 			return false;
 		}
-		for (int row = 0; row < leftMatrix.height; row++) {
+		for (int row = 0; row < leftMatrix.mHeight; row++) {
 			if (leftMatrix[row] != rightMatrix[row]) {
 				return false;
 			}
@@ -664,41 +709,33 @@ namespace linalg {
 		return outputStream;
 	}
 	
-	const int Matrixx::size() const
-	{
-		return height * width;
-	}
 	const int Matrixx::getHeight() const
 	{
-		return height;
+		return mHeight;
 	}
 	const int Matrixx::getWidth() const
 	{
-		return width;
+		return mWidth;
 	}
 
 	Roww Matrixx::getRow(const int row) const
 	{
-		Roww copyRow(width);
-		for (int col = 0; col < width; col++) {
-			copyRow[col] = rows[row][col];
-		}
-		return copyRow;
+		return Roww(mRows[row]);
 	}
 	Vectorr Matrixx::getColumn(const int col) const
 	{
-		Vectorr copyVector(height);
-		for (int row = 0; row < height; row++) {
-			copyVector[row] = rows[row][col];
+		Vectorr copyVector(mHeight);
+		for (int row = 0; row < mHeight; row++) {
+			copyVector[row] = mRows[row][col];
 		}
 		return copyVector;
 	}
 
 	const std::string Matrixx::str() const
 	{
-		std::string matrixString = "(" + std::to_string(height) + " x " + std::to_string(width) + " Matrix)\n";
-		for (int row = 0; row < height; row++) {
-			matrixString += rows[row].str();
+		std::string matrixString = "(" + std::to_string(mHeight) + " x " + std::to_string(mWidth) + " Matrix)\n";
+		for (int row = 0; row < mHeight; row++) {
+			matrixString += mRows[row].str();
 		}
 		return matrixString;
 	}
@@ -709,88 +746,94 @@ namespace linalg {
 
 
 	Roww::Roww()
-		: width(0), entries(nullptr)
+		: LinalgContainer(0),
+		mEntries(nullptr)
 	{
 	}
-	Roww::Roww(const int width)
+	Roww::Roww(const int size)
 	{
-		init(width);
+		init(size);
 	}
 	Roww::Roww(const Roww& copyRow)
-		: Roww(copyRow.width)
+		: Roww(copyRow.mSize)
 	{
-		for (int col = 0; col < width; col++) {
-			entries[col] = copyRow[col];
+		for (int col = 0; col < mSize; col++) {
+			mEntries[col] = copyRow[col];
 		}
 	}
 	linalg::Roww::~Roww()
 	{
-		/*delete[] entries;
-		entries = nullptr;*/
 	}
-	void Roww::init(const int width)
+	void Roww::init(const int size)
 	{
-		int exceptNum = ExceptionHandler::checkValidWidth(width);
+		int exceptNum = ExceptionHandler::checkValidWidth(size);
 		if (exceptNum > (int)LengthState::NoExcept) {
-			LengthArgument lengthArg(1, width);
+			LengthArgument lengthArg(1, size);
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
 
-		/*if (entries != nullptr) {
-			delete[] entries;
-			entries = nullptr;
-		}*/
-
-		this->width = width;
-		//entries = new double[width];
-		entries = std::make_unique<double[]>(width);
+		mSize = size;
+		mEntries = std::make_unique<double[]>(size);
 	}
 
 	double& Roww::operator[](const int col)
 	{
-		int exceptNum = ExceptionHandler::checkColumnIndex(col, width);
+		int exceptNum = ExceptionHandler::checkColumnIndex(col, mSize);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			ColumnIndexArgument colIndexArg(col, width);
+			ColumnIndexArgument colIndexArg(col, mSize);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
 		}
 
 		if (col >= 0) {
-			return entries[col];
+			return mEntries[col];
 		}
 		else {
-			return entries[width + col];
+			return mEntries[mSize + col];
 		}
 	}
 	const double& Roww::operator[](const int col) const
 	{
-		int exceptNum = ExceptionHandler::checkColumnIndex(col, width);
+		int exceptNum = ExceptionHandler::checkColumnIndex(col, mSize);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			ColumnIndexArgument colIndexArg(col, width);
+			ColumnIndexArgument colIndexArg(col, mSize);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
 		}
 
 		if (col >= 0) {
-			return entries[col];
+			return mEntries[col];
 		}
 		else {
-			return entries[width + col];
+			return mEntries[mSize + col];
 		}
 	}
 
+	Roww& Roww::operator=(std::initializer_list<double> values)
+	{
+		int sequence = 0;
+		for (double value : values) {
+			if (sequence < mSize) {
+				allocate(sequence, value);
+			}
+			sequence++;
+		}
+		return *this;
+	}
 	Allocator& Roww::operator<<(const double value)
 	{
-		this->allocate(0, value);
+		allocate(0, value);
 		return *(new Allocator(*this, 1));
 	}
 	void Roww::allocate(const int sequence, const double value)
 	{
-		entries[sequence] = convertNegativeZero(value);
+		if (sequence < mSize) {
+			mEntries[sequence] = convertNegativeZero(value);
+		}
 	}
 
 	Roww Roww::operator+() const
@@ -799,13 +842,18 @@ namespace linalg {
 	}
 	Roww Roww::operator-() const
 	{
-		Roww negativeRow(width);
-		for (int col = 0; col < width; col++) {
-			negativeRow[col] = convertNegativeZero(-entries[col]);
+		Roww negativeRow(mSize);
+		for (int col = 0; col < mSize; col++) {
+			negativeRow[col] = convertNegativeZero(-mEntries[col]);
 		}
 		return negativeRow;
 	}
 
+	void swap(Roww& leftRow, Roww& rightRow) noexcept
+	{
+		std::swap(leftRow.mEntries, rightRow.mEntries);
+		std::swap(leftRow.mSize, rightRow.mSize);
+	}
 	Roww& Roww::operator=(const Roww& rightRow)
 	{
 		if (this == &rightRow) {
@@ -816,50 +864,48 @@ namespace linalg {
 		swap(*this, copyRow);
 		return *this;
 	}
-	void swap(Roww& leftRow, Roww& rightRow) noexcept
-	{
-		std::swap(leftRow.entries, rightRow.entries);
-		std::swap(leftRow.width, rightRow.width);
-	}
-
 	Roww& Roww::operator+=(const Roww& rightRow)
 	{
-		int exceptNum = ExceptionHandler::checkWidth(width, rightRow.width);
+		int exceptNum = ExceptionHandler::checkWidth(mSize, rightRow.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(1, width);
-			LengthArgument rightLengthArg(1, rightRow.width);
+			LengthArgument leftLengthArg(1, mSize);
+			LengthArgument rightLengthArg(1, rightRow.mSize);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
-		
-		for (int col = 0; col < width; col++) {
-			entries[col] = convertNegativeZero(entries[col] + rightRow[col]);
+
+		Roww resultRow(*this);
+		for (int col = 0; col < mSize; col++) {
+			resultRow[col] = convertNegativeZero(mEntries[col] + rightRow[col]);
 		}
+		swap(*this, resultRow);
 		return *this;
 	}
 	Roww& Roww::operator-=(const Roww& rightRow)
 	{
-		int exceptNum = ExceptionHandler::checkWidth(width, rightRow.width);
+		int exceptNum = ExceptionHandler::checkWidth(mSize, rightRow.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(1, width);
-			LengthArgument rightLengthArg(1, rightRow.width);
+			LengthArgument leftLengthArg(1, mSize);
+			LengthArgument rightLengthArg(1, rightRow.mSize);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		for (int col = 0; col < width; col++) {
-			entries[col] = convertNegativeZero(entries[col] - rightRow[col]);
+		Roww resultRow(*this);
+		for (int col = 0; col < mSize; col++) {
+			resultRow[col] = convertNegativeZero(mEntries[col] - rightRow[col]);
 		}
+		swap(*this, resultRow);
 		return *this;
 	}
 	Roww& Roww::operator*=(const double multiplier)
 	{
-		for (int col = 0; col < width; col++) {
-			entries[col] = convertNegativeZero(multiplier * entries[col]);
+		for (int col = 0; col < mSize; col++) {
+			mEntries[col] = convertNegativeZero(multiplier * mEntries[col]);
 		}
 		return *this;
 	}
@@ -870,20 +916,22 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		for (int col = 0; col < width; col++) {
-			entries[col] /= divisor;
+		Roww resultRow(*this);
+		for (int col = 0; col < mSize; col++) {
+			resultRow[col] /= divisor;
 		}
+		swap(*this, resultRow);
 		return *this;
 	}
 
 	Roww& Roww::operator&=(const Roww& rightRow)
 	{
-		Roww appendedRow(width + rightRow.width);
-		for (int col = 0; col < width; col++) {
-			appendedRow[col] = entries[col];
+		Roww appendedRow(mSize + rightRow.mSize);
+		for (int col = 0; col < mSize; col++) {
+			appendedRow[col] = mEntries[col];
 		}
-		for (int col = width; col < width + rightRow.width; col++) {
-			appendedRow[col] = rightRow[col - width];
+		for (int col = mSize; col < mSize + rightRow.mSize; col++) {
+			appendedRow[col] = rightRow[col - mSize];
 		}
 		swap(*this, appendedRow);
 		return *this;
@@ -911,6 +959,12 @@ namespace linalg {
 	{
 		return operator*(multiplier, leftRow);
 	}
+	Roww operator/(const Roww& leftRow, const double divisor)
+	{
+		Roww resultRow(leftRow);
+		resultRow /= divisor;
+		return resultRow;
+	}
 	Roww operator&(const Roww& leftRow, const Roww& rightRow)
 	{
 		Roww appendedRow(leftRow);
@@ -919,10 +973,10 @@ namespace linalg {
 	}
 	bool operator==(const Roww& leftRow, const Roww& rightRow)
 	{
-		if (leftRow.width != rightRow.width) {
+		if (leftRow.mSize != rightRow.mSize) {
 			return false;
 		}
-		for (int col = 0; col < leftRow.width; col++) {
+		for (int col = 0; col < leftRow.mSize; col++) {
 			if (leftRow[col] != rightRow[col]) {
 				return false;
 			}
@@ -939,20 +993,18 @@ namespace linalg {
 		return outputStream;
 	}
 
-	const int Roww::size() const
-	{
-		return width;
-	}
-	const int Roww::getWidth() const
-	{
-		return width;
-	}
-
 	const std::string Roww::str() const
 	{
+		std::ostringstream parser;
+		parser.precision(2);
 		std::string rowString = "[\t";
-		for (int col = 0; col < width; col++) {
-			rowString += std::to_string(entries[col]) + "\t";
+		for (int col = 0; col < mSize; col++) {
+			if (mEntries[col] >= 0.0) {
+				parser << " ";
+			}
+			parser << mEntries[col];
+			rowString += parser.str() + "\t";
+			parser.str("");
 		}
 		rowString += "]\n";
 		return rowString;
@@ -963,88 +1015,94 @@ namespace linalg {
 
 
 	Vectorr::Vectorr()
-		: height(0), entries(nullptr)
+		: LinalgContainer(0),
+		mEntries(nullptr)
 	{
 	}
-	Vectorr::Vectorr(const int height)
+	Vectorr::Vectorr(const int size)
 	{
-		init(height);
+		init(size);
 	}
 	Vectorr::Vectorr(const Vectorr& copyVector)
-		: Vectorr(copyVector.height)
+		: Vectorr(copyVector.mSize)
 	{
-		for (int row = 0; row < height; row++) {
-			entries[row] = copyVector[row];
+		for (int row = 0; row < mSize; row++) {
+			mEntries[row] = copyVector[row];
 		}
 	}
 	Vectorr::~Vectorr()
 	{
-		/*delete[] entries;
-		entries = nullptr;*/
 	}
-	void Vectorr::init(const int height)
+	void Vectorr::init(const int size)
 	{
-		int exceptNum = ExceptionHandler::checkValidHeight(height);
+		int exceptNum = ExceptionHandler::checkValidHeight(size);
 		if (exceptNum > (int)LengthState::NoExcept) {
-			LengthArgument lengthArg(height, 1);
+			LengthArgument lengthArg(size, 1);
 			ExceptionHandler handler(ExceptionState::LengthError, exceptNum);
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
 
-		/*if (entries != nullptr) {
-			delete[] entries;
-			entries = nullptr;
-		}*/
-
-		this->height = height;
-		//entries = new double[height];
-		entries = std::make_unique<double[]>(height);
+		mSize = size;
+		mEntries = std::make_unique<double[]>(size);
 	}
 
 	double& Vectorr::operator[](const int row)
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mSize);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(row, height);
+			RowIndexArgument rowIndexArg(row, mSize);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
 		}
 
 		if (row >= 0) {
-			return entries[row];
+			return mEntries[row];
 		}
 		else {
-			return entries[height + row];
+			return mEntries[mSize + row];
 		}
 	}
 	const double& Vectorr::operator[](const int row) const
 	{
-		int exceptNum = ExceptionHandler::checkRowIndex(row, height);
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mSize);
 		if (exceptNum > (int)IndexState::NoExcept) {
-			RowIndexArgument rowIndexArg(row, height);
+			RowIndexArgument rowIndexArg(row, mSize);
 			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
 		}
 
 		if (row >= 0) {
-			return entries[row];
+			return mEntries[row];
 		}
 		else {
-			return entries[height + row];
+			return mEntries[mSize + row];
 		}
 	}
 
+	Vectorr& Vectorr::operator=(std::initializer_list<double> values)
+	{
+		int sequence = 0;
+		for (double value : values) {
+			if (sequence < mSize) {
+				allocate(sequence, value);
+			}
+			sequence++;
+		}
+		return *this;
+	}
 	Allocator& Vectorr::operator<<(const double value)
 	{
-		this->allocate(0, value);
+		allocate(0, value);
 		return *(new Allocator(*this, 1));
 	}
 	void Vectorr::allocate(const int sequence, const double value)
 	{
-		entries[sequence] = convertNegativeZero(value);
+		if (sequence < mSize) {
+			mEntries[sequence] = convertNegativeZero(value);
+		}
 	}
 
 	Vectorr Vectorr::operator+() const
@@ -1053,13 +1111,18 @@ namespace linalg {
 	}
 	Vectorr Vectorr::operator-() const
 	{
-		Vectorr negativeVector(height);
-		for (int row = 0; row < height; row++) {
-			negativeVector[row] = convertNegativeZero(-entries[row]);
+		Vectorr negativeVector(mSize);
+		for (int row = 0; row < mSize; row++) {
+			negativeVector[row] = convertNegativeZero(-mEntries[row]);
 		}
 		return negativeVector;
 	}
 
+	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
+	{
+		std::swap(leftVector.mEntries, rightVector.mEntries);
+		std::swap(leftVector.mSize, rightVector.mSize);
+	}
 	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
 	{
 		if (this == &rightVector) {
@@ -1070,50 +1133,48 @@ namespace linalg {
 		swap(*this, copyVector);
 		return *this;
 	}
-	void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept
-	{
-		std::swap(leftVector.entries, rightVector.entries);
-		std::swap(leftVector.height, rightVector.height);
-	}
-
 	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
+		int exceptNum = ExceptionHandler::checkHeight(mSize, rightVector.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, 1);
-			LengthArgument rightLengthArg(rightVector.height, 1);
+			LengthArgument leftLengthArg(mSize, 1);
+			LengthArgument rightLengthArg(rightVector.mSize, 1);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		for (int row = 0; row < height; row++) {
-			entries[row] = convertNegativeZero(entries[row] + rightVector[row]);
+		Vectorr resultVector(*this);
+		for (int row = 0; row < mSize; row++) {
+			resultVector[row] = convertNegativeZero(mEntries[row] + rightVector[row]);
 		}
+		swap(*this, resultVector);
 		return *this;
 	}
 	Vectorr& Vectorr::operator-=(const Vectorr& rightVector)
 	{
-		int exceptNum = ExceptionHandler::checkHeight(height, rightVector.height);
+		int exceptNum = ExceptionHandler::checkHeight(mSize, rightVector.mSize);
 		if (exceptNum > (int)OperationState::NoExcept) {
-			LengthArgument leftLengthArg(height, 1);
-			LengthArgument rightLengthArg(rightVector.height, 1);
+			LengthArgument leftLengthArg(mSize, 1);
+			LengthArgument rightLengthArg(rightVector.mSize, 1);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
 			ExceptionHandler handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 		
-		for (int row = 0; row < height; row++) {
-			entries[row] = convertNegativeZero(entries[row] - rightVector[row]);
+		Vectorr resultVector(*this);
+		for (int row = 0; row < mSize; row++) {
+			resultVector[row] = convertNegativeZero(mEntries[row] - rightVector[row]);
 		}
+		swap(*this, resultVector);
 		return *this;
 	}
 	Vectorr& Vectorr::operator*=(const double multiplier)
 	{
-		for (int row = 0; row < height; row++) {
-			entries[row] = convertNegativeZero(multiplier * entries[row]);
+		for (int row = 0; row < mSize; row++) {
+			mEntries[row] = convertNegativeZero(multiplier * mEntries[row]);
 		}
 		return *this;
 	}
@@ -1124,20 +1185,22 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		for (int row = 0; row < height; row++) {
-			entries[row] /= divisor;
+		Vectorr resultVector(*this);
+		for (int row = 0; row < mSize; row++) {
+			resultVector[row] /= divisor;
 		}
+		swap(*this, resultVector);
 		return *this;
 	}
 
 	Vectorr& Vectorr::operator|=(const Vectorr& lowerVector)
 	{
-		Vectorr appendedVector(height + lowerVector.height);
-		for (int row = 0; row < height; row++) {
-			appendedVector[row] = entries[row];
+		Vectorr appendedVector(mSize + lowerVector.mSize);
+		for (int row = 0; row < mSize; row++) {
+			appendedVector[row] = mEntries[row];
 		}
-		for (int row = height; row < height + lowerVector.height; row++) {
-			appendedVector[row] = lowerVector[row - height];
+		for (int row = mSize; row < mSize + lowerVector.mSize; row++) {
+			appendedVector[row] = lowerVector[row - mSize];
 		}
 		swap(*this, appendedVector);
 		return *this;
@@ -1165,6 +1228,12 @@ namespace linalg {
 	{
 		return operator*(multiplier, leftVector);
 	}
+	Vectorr operator/(const Vectorr& leftVector, const double divisor)
+	{
+		Vectorr resultVector(leftVector);
+		resultVector /= divisor;
+		return resultVector;
+	}
 	Vectorr operator|(const Vectorr& upperVector, const Vectorr& lowerVector)
 	{
 		Vectorr appendedVector(upperVector);
@@ -1173,10 +1242,10 @@ namespace linalg {
 	}
 	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector)
 	{
-		if (leftVector.height != rightVector.height) {
+		if (leftVector.mSize != rightVector.mSize) {
 			return false;
 		}
-		for (int row = 0; row < leftVector.height; row++) {
+		for (int row = 0; row < leftVector.mSize; row++) {
 			if (leftVector[row] != rightVector[row]) {
 				return false;
 			}
@@ -1193,20 +1262,18 @@ namespace linalg {
 		return outputStream;
 	}
 
-	const int Vectorr::size() const
-	{
-		return height;
-	}
-	const int Vectorr::getHeight() const
-	{
-		return height;
-	}
-
 	const std::string Vectorr::str() const
 	{
-		std::string vectorString = "(" + std::to_string(height) + " row Vector)\n";
-		for (int row = 0; row < height; row++) {
-			vectorString += "[\t" + std::to_string(entries[row]) + "\t]\n";
+		std::ostringstream parser;
+		parser.precision(2);
+		std::string vectorString = "(" + std::to_string(mSize) + " row Vector)\n";
+		for (int row = 0; row < mSize; row++) {
+			if (mEntries[row] >= 0.0) {
+				parser << " ";
+			}
+			parser << mEntries[row];
+			vectorString += "[\t" + parser.str() + "\t]\n";
+			parser.str("");
 		}
 		return vectorString;
 	}
