@@ -17,7 +17,7 @@ namespace linalg {
 
 	/*
 	* Allocator class is used for allocating values into linear algebra containers.
-	* It allocates values when it encounters operator '<<' and ',' with increating sequence.
+	* It allocates values when it encounters operator '<<' and ',' with increasing sequence.
 	*/
 	class Allocator {
 		friend class Allocatable;
@@ -137,6 +137,10 @@ namespace linalg {
 			double entry;
 		};
 
+		/*
+		* "컴퓨터 프로그램은 보통 한 열에서 가장 절댓값이 큰 성분을 추축으로 선정한다."
+		* - [David C. Lay et al] Linear Algebra and Its Applications 21p -
+		*/
 		const Pivot findPivot(const int beginRow, const int beginCol) const; // Find largest absolute value of entries
 		const void replaceRowsUnder(const Pivot pivot); // Row replacing operation in forward phase
 		const Pivot getPivot(const int row) const; // Get existing pivot from row in echelon form matrix
