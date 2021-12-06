@@ -60,7 +60,8 @@ namespace linalg {
 	* Index reference operators allows negative index as in python.
 	* Range : -size ~ (size - 1)
 	* 
-	* 
+	* '&' is a horizontal append operator and '|' is a vertical append operator.
+	* Priority : & > | (follows default priority of 'and' and 'or')
 	*/
 	class Matrixx : public LinalgContainer {
 		friend class Roww;
