@@ -43,16 +43,18 @@ namespace linalg {
 		static const int checkValidHeight(const int height); // Check valid height on height allocation
 		static const int checkValidWidth(const int width); // Check valid width on width allocation
 
-		static const int checkRowIndex(const int row, const int height); // Check row index on row reference
-		static const int checkColumnIndex(const int col, const int width); // Check column index on column reference
+		static const int checkRowIndex(const int row, const size_t height); // Check row index on row reference
+		static const int checkRowIndex(const size_t row, const size_t height);
+		static const int checkColumnIndex(const int col, const size_t width); // Check column index on column reference
+		static const int checkColumnIndex(const size_t col, const size_t width);
 
-		static const int checkHeight(const int height1, const int height2); // Check equal height on operation
-		static const int checkWidth(const int width1, const int width2); // Check equal width on operation
-		static const int checkJoinLength(const int width, const int height); // Check length equal on dot product
+		static const int checkHeight(const size_t height1, const size_t height2); // Check equal height on operation
+		static const int checkWidth(const size_t width1, const size_t width2); // Check equal width on operation
+		static const int checkJoinLength(const size_t width, const size_t height); // Check length equal on dot product
 	private:
-		ExceptionState exceptionState;
-		int exceptionNumber;
-		std::vector<ExceptionArgument*> exceptionArgs;
+		ExceptionState mExceptionState;
+		int mExceptionNumber;
+		std::vector<ExceptionArgument*> mExceptionArgs;
 		// Pointer template prevents object slicing and preserve derived class on promotion(up-casting)
 
 		// Generate exception string( e.what() ) by exception arguments
@@ -90,34 +92,38 @@ namespace linalg {
 		friend class IndexArgument;
 		friend class OperationArgument;
 	public:
-		LengthArgument(const int height, const int width);
+		LengthArgument(const size_t height, const size_t width);
 		~LengthArgument();
 
 		virtual const std::string str() const override;
 	private:
-		int height, width;
+		size_t mHeight, mWidth;
 	};
 
 	// Index reference out of range exception argument
 	class RowIndexArgument : public ExceptionArgument {
 		friend class ExceptionHandler;
 	public:
-		RowIndexArgument(const int row, const int height);
+		RowIndexArgument(const int row, const size_t height, const bool allowNegativeIndex = false);
+		RowIndexArgument(const size_t row, const size_t height, const bool allowNegativeIndex = false);
 		~RowIndexArgument();
 
 		virtual const std::string str() const override;
 	private:
-		int row, height;
+		int mRow, mBeginIndex;
+		size_t mHeight;
 	};
 	class ColumnIndexArgument : public ExceptionArgument {
 		friend class ExceptionHandler;
 	public:
-		ColumnIndexArgument(const int col, const int width);
+		ColumnIndexArgument(const int col, const size_t width, const bool allowNegativeIndex = false);
+		ColumnIndexArgument(const size_t col, const size_t width, const bool allowNegativeIndex = false);
 		~ColumnIndexArgument();
 
 		virtual const std::string str() const override;
 	private:
-		int col, width;
+		int mCol, mBeginIndex;
+		size_t mWidth;
 	};
 
 	// Arithmetic exception argument
@@ -129,8 +135,8 @@ namespace linalg {
 
 		virtual const std::string str() const override;
 	private:
-		char operation;
-		LengthArgument lengthArg1, lengthArg2;
+		char mOperation;
+		LengthArgument mLengthArg1, mLengthArg2;
 	};
 
 	// All other exception argument

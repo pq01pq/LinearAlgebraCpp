@@ -22,34 +22,34 @@ namespace linalg {
 	class Allocator {
 		friend class Allocatable;
 	public:
-		Allocator(Allocatable& target, const int sequence);
+		Allocator(Allocatable& target, const size_t sequence);
 		~Allocator();
 		Allocator& operator,(const double value);
 		
 	private:
 		Allocatable& target;
-		int sequence;
+		size_t sequence;
 	};
 
 	// Mix-in class of linear algebra containers(== Java interface)
 	class Allocatable {
 		friend class Allocator;
 	protected:
-		inline virtual void allocate(const int sequence, const double value) {}
+		inline virtual void allocate(const size_t sequence, const double value) {}
 	};
 
 	// Base class of vectors
 	class Tensor {
 	public:
 		~Tensor();
-		const int size() const;
+		const size_t size() const;
 
 		inline virtual const std::string str() const { return "NaN"; }
 	protected:
 		Tensor();
 		Tensor(int size);
 
-		int mSize;
+		size_t mSize;
 
 		const double convertNegativeZero(const double value) const;
 	};
@@ -81,16 +81,17 @@ namespace linalg {
 
 		friend bool isEchelonForm(const Matrixx& matrix);
 
-		Matrixx block(const int beginRow, const int beginCol,
-			const int blockHeight, const int blockWidth) const; // throws std::out_of_range
+		Matrixx block(const size_t beginRow, const size_t beginCol,
+			const size_t blockHeight, const size_t blockWidth) const; // throws std::out_of_range
 
 		static Matrixx identity(const int length); // throws std::length_error, create elementary matrix(or unit matrix)
 		static Matrixx zero(const int height, const int width); // throws std::length_error, create zero matrix
 		Matrixx inverse(); // throws std::logic_error, get inverse matrix of square matrix
 		
-		Roww& operator[](const int row); // throws std::out_of_range
-		const Roww& operator[](const int row) const; // throws std::out_of_range
-		double& operator()(const int row, const int col) const; // throws std::out_of_range
+		Roww& operator[](const size_t row); // throws std::out_of_range
+		const Roww& operator[](const size_t row) const; // throws std::out_of_range
+		Roww& operator()(const int row);
+		double& operator()(const int row, const int col); // throws std::out_of_range
 		// (recommended) operator() can catch both row and column index out of range exception.
 
 		Matrixx& operator=(std::initializer_list<double> values); // 1st way to initialize entries
@@ -118,8 +119,8 @@ namespace linalg {
 
 		friend bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 
-		virtual const int getHeight() const;
-		virtual const int getWidth() const;
+		const size_t getHeight() const;
+		const size_t getWidth() const;
 
 		Roww getRow(const int row) const; // throws std::out_of_range
 		Vectorr getColumn(const int col) const; // throws std::out_of_range
@@ -127,13 +128,13 @@ namespace linalg {
 		virtual const std::string str() const override;
 
 	protected:
-		virtual void allocate(const int sequence, const double value) override;
+		virtual void allocate(const size_t sequence, const double value) override;
 	private:
-		int mHeight, mWidth;
+		size_t mHeight, mWidth;
 		std::unique_ptr<Roww[]> mRows;
 
 		struct Pivot {
-			int row, col;
+			size_t row, col;
 			double entry;
 		};
 
@@ -141,9 +142,9 @@ namespace linalg {
 		* "컴퓨터 프로그램은 보통 한 열에서 가장 절댓값이 큰 성분을 추축으로 선정한다."
 		* - [David C. Lay et al] Linear Algebra and Its Applications (선형대수학) 1.2 -
 		*/
-		const Pivot findPivot(const int beginRow, const int beginCol) const; // Find largest absolute value of entries
+		const Pivot findPivot(const size_t beginRow, const size_t beginCol) const; // Find largest absolute value of entries
 		const void replaceRowsUnder(const Pivot pivot); // Row replacing operation in forward phase
-		const Pivot getPivot(const int row) const; // Get existing pivot from row in echelon form matrix
+		const Pivot getPivot(const size_t row) const; // Get existing pivot from row in echelon form matrix
 		const void replaceRowsOver(const Pivot pivot); // Row replacing operation in backward phase
 
 		friend void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept;
@@ -181,8 +182,9 @@ namespace linalg {
 		~Roww();
 		void init(const int size);
 
-		double& operator[](const int col); // throws std::out_of_range
-		const double& operator[](const int col) const; // throws std::out_of_range
+		double& operator[](const size_t col); // throws std::out_of_range
+		const double& operator[](const size_t col) const; // throws std::out_of_range
+		double& operator()(const int col);
 
 		Roww& operator=(std::initializer_list<double> values); // 1st way to initialize entries
 		Allocator& operator<<(const double value); // 2nd way to initialize entries
@@ -203,7 +205,7 @@ namespace linalg {
 
 		virtual const std::string str() const override;
 	protected:
-		virtual void allocate(const int sequence, const double value) override;
+		virtual void allocate(const size_t sequence, const double value) override;
 	private:
 		std::unique_ptr<double[]> mEntries;
 
@@ -233,8 +235,9 @@ namespace linalg {
 		~Vectorr();
 		void init(const int size);
 
-		double& operator[](const int row); // throws std::out_of_range
-		const double& operator[](const int row) const; // throws std::out_of_range
+		double& operator[](const size_t row); // throws std::out_of_range
+		const double& operator[](const size_t row) const; // throws std::out_of_range
+		double& operator()(const int row);
 
 		Vectorr& operator=(std::initializer_list<double> values); // 1st way to initialize entries
 		Allocator& operator<<(const double value); // 2nd way to initialize entries
@@ -258,7 +261,7 @@ namespace linalg {
 
 		virtual const std::string str() const override;
 	protected:
-		virtual void allocate(const int sequence, const double value) override;
+		virtual void allocate(const size_t sequence, const double value) override;
 	private:
 		std::unique_ptr<double[]> mEntries;
 		

@@ -3,7 +3,7 @@
 
 namespace linalg {
 	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber)
-		: exceptionState(exceptionState), exceptionNumber(exceptionNumber)
+		: mExceptionState(exceptionState), mExceptionNumber(exceptionNumber)
 	{
 	}
 	ExceptionHandler::~ExceptionHandler()
@@ -11,19 +11,19 @@ namespace linalg {
 	}
 	void ExceptionHandler::setExceptionState(const ExceptionState exceptionState)
 	{
-		this->exceptionState = exceptionState;
+		this->mExceptionState = exceptionState;
 	}
 	void ExceptionHandler::setExceptionNumber(const int exceptionNumber)
 	{
-		this->exceptionNumber = exceptionNumber;
+		this->mExceptionNumber = exceptionNumber;
 	}
 	void ExceptionHandler::addArgument(ExceptionArgument& exceptionArg)
 	{
-		exceptionArgs.push_back(&exceptionArg);
+		mExceptionArgs.push_back(&exceptionArg);
 	}
 	void ExceptionHandler::handleException()
 	{
-		switch (exceptionState) {
+		switch (mExceptionState) {
 		case ExceptionState::LengthError:
 			throw std::length_error(getLengthErrorString() + "\n");
 		case ExceptionState::OutOfRange:
@@ -40,77 +40,76 @@ namespace linalg {
 	const std::string ExceptionHandler::getLengthErrorString() const
 	{
 		std::string exceptStr;
-		switch (exceptionNumber) {
-		case (int)LengthState::InvalidHeight:
+		switch (mExceptionNumber) {
+		case static_cast<int>(LengthState::InvalidHeight):
 			exceptStr = "Bad height";
 			break;
-		case (int)LengthState::InvalidWidth:
+		case static_cast<int>(LengthState::InvalidWidth):
 			exceptStr = "Bad width";
 			break;
-		case (int)LengthState::InvalidHeightAndWidth:
+		case static_cast<int>(LengthState::InvalidHeightAndWidth):
 			exceptStr = "Bad height and width";
 			break;
 		default:
 			break;
 		}
-		if (exceptionArgs.size() > 0) {
-			exceptStr += " : " + exceptionArgs[0]->str();
+		if (mExceptionArgs.size() > 0) {
+			exceptStr += " : " + mExceptionArgs[0]->str();
 		}
 		return exceptStr;
 	}
 	const std::string ExceptionHandler::getOutOfRangeString() const
 	{
 		std::string exceptStr;
-		switch (exceptionNumber) {
-		case (int)IndexState::RowIndexOutOfRange:
+		switch (mExceptionNumber) {
+		case static_cast<int>(IndexState::RowIndexOutOfRange):
 			exceptStr = "Row index out of range.";
 			break;
-		case (int)IndexState::ColumnIndexOutOfRange:
+		case static_cast<int>(IndexState::ColumnIndexOutOfRange):
 			exceptStr = "Column index out of range.";
 			break;
-		case (int)IndexState::BothIndexOutOfRange:
+		case static_cast<int>(IndexState::BothIndexOutOfRange):
 			exceptStr = "Row and column index out of range.";
 			break;
 		default:
 			break;
 		}
-		if (exceptionArgs.size() > 0) {
-			for (int argIndex = 0; argIndex < exceptionArgs.size(); argIndex++) {
-				exceptStr += "\n" + exceptionArgs[argIndex]->str();
-			}
+
+		for (size_t argIndex = 0; argIndex < mExceptionArgs.size(); argIndex++) {
+			exceptStr += "\n" + mExceptionArgs[argIndex]->str();
 		}
 		return exceptStr;
 	}
 	const std::string ExceptionHandler::getArithmeticExceptionString() const
 	{
 		std::string exceptStr;
-		switch (exceptionNumber) {
-		case (int)OperationState::HeightDoNotMatch:
+		switch (mExceptionNumber) {
+		case static_cast<int>(OperationState::HeightDoNotMatch):
 			exceptStr = "Height do not match";
 			break;
-		case (int)OperationState::WidthDoNotMatch:
+		case static_cast<int>(OperationState::WidthDoNotMatch):
 			exceptStr = "Width do not match";
 			break;
-		case (int)OperationState::BothLengthDoNotMatch:
+		case static_cast<int>(OperationState::BothLengthDoNotMatch):
 			exceptStr = "Height and width do not match";
 			break;
-		case (int)OperationState::JoinLengthDoNotMatch:
+		case static_cast<int>(OperationState::JoinLengthDoNotMatch):
 			exceptStr = "Cannot multiply";
 			break;
-		case (int)OperationState::DivideByZero:
+		case static_cast<int>(OperationState::DivideByZero):
 			return "Divide by zero";
 		default:
 			break;
 		}
-		if (exceptionArgs.size() > 0) {
-			exceptStr += " : " + exceptionArgs[0]->str();
+		if (mExceptionArgs.size() > 0) {
+			exceptStr += " : " + mExceptionArgs[0]->str();
 		}
 		return exceptStr;
 	}
 	const std::string ExceptionHandler::getEtcExceptionString() const
 	{
-		if (exceptionArgs.size() > 0) {
-			return exceptionArgs[0]->str();
+		if (mExceptionArgs.size() > 0) {
+			return mExceptionArgs[0]->str();
 		}
 		return "Logic Error";
 	}
@@ -118,61 +117,70 @@ namespace linalg {
 	const int ExceptionHandler::checkValidHeight(const int height)
 	{
 		if (height < 1) {
-			return (int)LengthState::InvalidHeight;
+			return static_cast<int>(LengthState::InvalidHeight);
 		}
-		return (int)LengthState::NoExcept;
+		return static_cast<int>(LengthState::NoExcept);
 	}
 	const int ExceptionHandler::checkValidWidth(const int width)
 	{
 		if (width < 1) {
-			return (int)LengthState::InvalidWidth;
+			return static_cast<int>(LengthState::InvalidWidth);
 		}
-		return (int)LengthState::NoExcept;
+		return static_cast<int>(LengthState::NoExcept);
 	}
 
-	const int ExceptionHandler::checkRowIndex(const int row, const int height)
+	const int ExceptionHandler::checkRowIndex(const int row, const size_t height)
 	{
-		if (row >= height || row < -height) {
-			return (int)IndexState::RowIndexOutOfRange;
+		if (row >= static_cast<int>(height) || row < -static_cast<int>(height)) {
+			return static_cast<int>(IndexState::RowIndexOutOfRange);
 		}
-		return (int)IndexState::NoExcept;
+		return static_cast<int>(IndexState::NoExcept);
 	}
-	const int ExceptionHandler::checkColumnIndex(const int col, const int width)
+	const int ExceptionHandler::checkRowIndex(const size_t row, const size_t height)
 	{
-		if (col >= width || col < -width) {
-			return (int)IndexState::ColumnIndexOutOfRange;
-		}
-		return (int)IndexState::NoExcept;
+		return ExceptionHandler::checkRowIndex(static_cast<int>(row), height);
 	}
 
-	const int ExceptionHandler::checkHeight(const int height1, const int height2)
+	const int ExceptionHandler::checkColumnIndex(const int col, const size_t width)
+	{
+		if (col >= static_cast<int>(width) || col < -static_cast<int>(width)) {
+			return static_cast<int>(IndexState::ColumnIndexOutOfRange);
+		}
+		return static_cast<int>(IndexState::NoExcept);
+	}
+	const int ExceptionHandler::checkColumnIndex(const size_t col, const size_t width)
+	{
+		return ExceptionHandler::checkColumnIndex(static_cast<int>(col), width);
+	}
+
+	const int ExceptionHandler::checkHeight(const size_t height1, const size_t height2)
 	{
 		if (height1 != height2) {
-			return (int)OperationState::HeightDoNotMatch;
+			return static_cast<int>(OperationState::HeightDoNotMatch);
 		}
-		return (int)OperationState::NoExcept;
+		return static_cast<int>(OperationState::NoExcept);
 	}
-	const int ExceptionHandler::checkWidth(const int width1, const int width2)
+	const int ExceptionHandler::checkWidth(const size_t width1, const size_t width2)
 	{
 		if (width1 != width2) {
-			return (int)OperationState::WidthDoNotMatch;
+			return static_cast<int>(OperationState::WidthDoNotMatch);
 		}
-		return (int)OperationState::NoExcept;
+		return static_cast<int>(OperationState::NoExcept);
 	}
-	const int ExceptionHandler::checkJoinLength(const int width, const int height)
+	const int ExceptionHandler::checkJoinLength(const size_t width, const size_t height)
 	{
 		if (width != height) {
-			return (int)OperationState::JoinLengthDoNotMatch;
+			return static_cast<int>(OperationState::JoinLengthDoNotMatch);
 		}
-		return (int)OperationState::NoExcept;
+		return static_cast<int>(OperationState::NoExcept);
 	}
 
 
 
 
 
-	LengthArgument::LengthArgument(const int height, const int width)
-		: height(height), width(width)
+	LengthArgument::LengthArgument(const size_t height, const size_t width)
+		: mHeight(height), mWidth(width)
 	{
 	}
 	LengthArgument::~LengthArgument()
@@ -181,14 +189,19 @@ namespace linalg {
 
 	const std::string LengthArgument::str() const
 	{
-		return "Heignt : " + std::to_string(height) + ", Width : " + std::to_string(width);
+		return "Heignt : " + std::to_string(mHeight) + ", Width : " + std::to_string(mWidth);
 	}
 
 
 
 
-	RowIndexArgument::RowIndexArgument(const int row, const int height)
-		: row(row), height(height)
+	RowIndexArgument::RowIndexArgument(const int row, const size_t height, const bool allowNegativeIndex)
+		: mRow(row), mHeight(height)
+	{
+		mBeginIndex = allowNegativeIndex ? -static_cast<int>(height) : 0;
+	}
+	RowIndexArgument::RowIndexArgument(const size_t row, const size_t height, const bool allowNegativeIndex)
+		: RowIndexArgument::RowIndexArgument(static_cast<int>(row), height, allowNegativeIndex)
 	{
 	}
 	RowIndexArgument::~RowIndexArgument()
@@ -197,15 +210,20 @@ namespace linalg {
 
 	const std::string RowIndexArgument::str() const
 	{
-		return "Row : range(" + std::to_string(-height) + " ~ " + std::to_string(height - 1)
-			+ "), access(" + std::to_string(row) + ")";
+		return "Row : range(" + std::to_string(mBeginIndex) + " ~ " + std::to_string(mHeight - 1)
+			+ "), access(" + std::to_string(mRow) + ")";
 	}
 
 
 
 
-	ColumnIndexArgument::ColumnIndexArgument(const int col, const int width)
-		: col(col), width(width)
+	ColumnIndexArgument::ColumnIndexArgument(const int col, const size_t width, const bool allowNegativeIndex)
+		: mCol(col), mWidth(width)
+	{
+		mBeginIndex = allowNegativeIndex ? -static_cast<int>(width) : 0;
+	}
+	ColumnIndexArgument::ColumnIndexArgument(const size_t col, const size_t width, const bool allowNegativeIndex)
+		: ColumnIndexArgument::ColumnIndexArgument(static_cast<int>(col), width, allowNegativeIndex)
 	{
 	}
 	ColumnIndexArgument::~ColumnIndexArgument()
@@ -214,8 +232,8 @@ namespace linalg {
 
 	const std::string ColumnIndexArgument::str() const
 	{
-		return "Column : range(" + std::to_string(-width) + " ~ " + std::to_string(width - 1)
-			+ "), access(" + std::to_string(col) + ")";
+		return "Column : range(" + std::to_string(mBeginIndex) + " ~ " + std::to_string(mWidth - 1)
+			+ "), access(" + std::to_string(mCol) + ")";
 	}
 
 
@@ -223,7 +241,7 @@ namespace linalg {
 
 	OperationArgument::OperationArgument(const char operation,
 		const LengthArgument& lengthArg1, const LengthArgument& lengthArg2)
-		: operation(operation), lengthArg1(lengthArg1), lengthArg2(lengthArg2)
+		: mOperation(operation), mLengthArg1(lengthArg1), mLengthArg2(lengthArg2)
 	{
 	}
 	OperationArgument::~OperationArgument()
@@ -232,9 +250,9 @@ namespace linalg {
 
 	const std::string OperationArgument::str() const
 	{
-		return "(" + std::to_string(lengthArg1.height) + " x " + std::to_string(lengthArg1.width) + ") "
-			+ operation
-			+ " (" + std::to_string(lengthArg2.height) + " x " + std::to_string(lengthArg2.width) + ")";
+		return "(" + std::to_string(mLengthArg1.mHeight) + " x " + std::to_string(mLengthArg1.mWidth) + ") "
+			+ mOperation
+			+ " (" + std::to_string(mLengthArg2.mHeight) + " x " + std::to_string(mLengthArg2.mWidth) + ")";
 	}
 
 

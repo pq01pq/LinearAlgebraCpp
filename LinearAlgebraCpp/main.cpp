@@ -72,6 +72,11 @@ int main()
 		cout << blockMultiply << endl;
 	}
 	catch (const logic_error& e) {
+		cout << "logic error" << endl;
+		cout << e.what() << endl;
+	}
+	catch (const exception& e) {
+		cout << "exception" << endl;
 		cout << e.what() << endl;
 	}
 }
