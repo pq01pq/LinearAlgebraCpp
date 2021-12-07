@@ -10,7 +10,7 @@ namespace linalg {
 
 	class Allocator;
 	class Allocatable;
-	class LinalgContainer;
+	class Tensor;
 	class Matrixx;
 	class Roww;
 	class Vectorr;
@@ -38,16 +38,16 @@ namespace linalg {
 		inline virtual void allocate(const int sequence, const double value) {}
 	};
 
-	// Base class of linear algebra containers
-	class LinalgContainer : protected Allocatable {
+	// Base class of vectors
+	class Tensor {
 	public:
-		~LinalgContainer();
+		~Tensor();
 		const int size() const;
 
 		inline virtual const std::string str() const { return "NaN"; }
 	protected:
-		LinalgContainer();
-		LinalgContainer(int size);
+		Tensor();
+		Tensor(int size);
 
 		int mSize;
 
@@ -63,7 +63,7 @@ namespace linalg {
 	* '&' is a horizontal append operator and '|' is a vertical append operator.
 	* Priority : & > | (follows default priority of 'and' and 'or')
 	*/
-	class Matrixx : public LinalgContainer {
+	class Matrixx : public Tensor, protected Allocatable {
 		friend class Roww;
 		friend class Vectorr;
 	public:
@@ -171,7 +171,7 @@ namespace linalg {
 
 	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
 
-	class Roww : public LinalgContainer {
+	class Roww : public Tensor, protected Allocatable {
 		friend class Matrixx;
 		friend class Vectorr;
 	public:
@@ -223,7 +223,7 @@ namespace linalg {
 
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
 
-	class Vectorr : public LinalgContainer {
+	class Vectorr : public Tensor, protected Allocatable {
 		friend class Matrixx;
 		friend class Roww;
 	public:

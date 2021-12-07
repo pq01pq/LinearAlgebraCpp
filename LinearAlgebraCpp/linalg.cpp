@@ -19,23 +19,23 @@ namespace linalg {
 
 
 	
-	LinalgContainer::LinalgContainer()
+	Tensor::Tensor()
 		: mSize(0)
 	{
 	}
-	LinalgContainer::LinalgContainer(int size)
+	Tensor::Tensor(int size)
 		: mSize(size)
 	{
 	}
-	LinalgContainer::~LinalgContainer()
+	Tensor::~Tensor()
 	{
 	}
 
-	const int LinalgContainer::size() const
+	const int Tensor::size() const
 	{
 		return mSize;
 	}
-	const double LinalgContainer::convertNegativeZero(const double value) const
+	const double Tensor::convertNegativeZero(const double value) const
 	{
 		return (value == -0.0) ? 0.0 : value;
 	}
@@ -45,12 +45,12 @@ namespace linalg {
 
 
 	Matrixx::Matrixx()
-		: LinalgContainer(0),
+		: Tensor(0),
 		mHeight(0), mWidth(0), mRows(nullptr)
 	{
 	}
 	Matrixx::Matrixx(const int height, const int width)
-		: LinalgContainer(height * width)
+		: Tensor(height * width)
 	{
 		init(height, width);
 	}
@@ -746,7 +746,7 @@ namespace linalg {
 
 
 	Roww::Roww()
-		: LinalgContainer(0),
+		: Tensor(0),
 		mEntries(nullptr)
 	{
 	}
@@ -1015,7 +1015,7 @@ namespace linalg {
 
 
 	Vectorr::Vectorr()
-		: LinalgContainer(0),
+		: Tensor(0),
 		mEntries(nullptr)
 	{
 	}
