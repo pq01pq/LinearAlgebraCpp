@@ -90,7 +90,7 @@ namespace linalg {
 		
 		Roww& operator[](const size_t row); // throws std::out_of_range
 		const Roww& operator[](const size_t row) const; // throws std::out_of_range
-		Roww& operator()(const int row);
+		Roww& operator()(const int row); // throws std::out_of_range
 		double& operator()(const int row, const int col); // throws std::out_of_range
 		// (recommended) operator() can catch both row and column index out of range exception.
 
