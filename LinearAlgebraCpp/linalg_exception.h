@@ -78,7 +78,7 @@ namespace linalg {
 	public:
 		// Overriding str() method allows using derived class' str() method without forced down-casting
 		inline virtual const std::string str() const { return "NaN"; };
-		
+	protected:
 	};
 	/*
 	* "다운캐스팅이 있다는 것은 디자인이 잘못된 것을 의미하기 때문에

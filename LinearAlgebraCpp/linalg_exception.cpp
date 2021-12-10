@@ -178,7 +178,6 @@ namespace linalg {
 
 
 
-
 	LengthArgument::LengthArgument(const size_t height, const size_t width)
 		: mHeight(height), mWidth(width)
 	{
@@ -269,4 +268,5 @@ namespace linalg {
 	{
 		return what;
 	}
+	
 }

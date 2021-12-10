@@ -27,9 +27,9 @@ namespace linalg {
 		: mSize(size)
 	{
 	}
-	Tensor::~Tensor()
+	/*Tensor::~Tensor()
 	{
-	}
+	}*/
 
 	const size_t Tensor::size() const
 	{
@@ -45,8 +45,7 @@ namespace linalg {
 
 
 	Matrixx::Matrixx()
-		: Tensor(0),
-		mHeight(0), mWidth(0), mRows(nullptr)
+		: Tensor(), mHeight(0), mWidth(0)
 	{
 	}
 	Matrixx::Matrixx(const int height, const int width)
@@ -54,7 +53,7 @@ namespace linalg {
 	{
 		init(height, width);
 	}
-	Matrixx::Matrixx(const Matrixx& copyMatrix)
+	/*Matrixx::Matrixx(const Matrixx& copyMatrix)
 		: Matrixx(static_cast<int>(copyMatrix.mHeight), static_cast<int>(copyMatrix.mWidth))
 	{
 		for (size_t row = 0; row < mHeight; row++) {
@@ -62,7 +61,11 @@ namespace linalg {
 				mRows[row][col] = copyMatrix[row][col];
 			}
 		}
-	}
+	}*/
+	/*Matrixx::Matrixx(Matrixx&& moveMatrix) noexcept
+	{
+		swap(*this, moveMatrix);
+	}*/
 	Matrixx::Matrixx(const Roww& copyRow)
 		: Matrixx(1, static_cast<int>(copyRow.mSize))
 	{
@@ -77,9 +80,9 @@ namespace linalg {
 			mRows[row][0] = copyVector[row];
 		}
 	}
-	Matrixx::~Matrixx()
+	/*Matrixx::~Matrixx()
 	{
-	}
+	}*/
 	void Matrixx::init(const int height, const int width)
 	{
 		int exceptNum = ExceptionHandler::checkValidHeight(height);
@@ -93,10 +96,9 @@ namespace linalg {
 		
 		mHeight = height;
 		mWidth = width;
-		mRows = std::make_unique<Roww[]>(mHeight);
-		for (size_t row = 0; row < mHeight; row++) {
-			mRows[row].init(width);
-		}
+
+		mRows.clear();
+		mRows.resize(mHeight, Roww(width));
 	}
 
 	void Matrixx::reduce()
@@ -234,28 +236,6 @@ namespace linalg {
 		return blockMatrix;
 	}
 
-	Matrixx Matrixx::identity(const int length)
-	{
-		Matrixx identityMatrix(length, length);
-		for (size_t row = 0; row < identityMatrix.mHeight; row++) {
-			for (size_t col = 0; col < identityMatrix.mWidth; col++) {
-				identityMatrix[row][col] = (row == col) ? 1.0 : 0.0;
-			}
-		}
-		return identityMatrix;
-	}
-
-	Matrixx Matrixx::zero(const int height, const int width)
-	{
-		Matrixx zeroMatrix(height, width);
-		for (size_t row = 0; row < zeroMatrix.mHeight; row++) {
-			for (size_t col = 0; col < zeroMatrix.mWidth; col++) {
-				zeroMatrix[row][col] = 0.0;
-			}
-		}
-		return zeroMatrix;
-	}
-
 	Matrixx Matrixx::inverse()
 	{
 		if (mHeight != mWidth) {
@@ -279,6 +259,45 @@ namespace linalg {
 
 		return appendedMatrix.block(0, length, length, length);
 	}
+
+	Matrixx Matrixx::transpose(const bool inplace)
+	{
+		Matrixx transposedMatrix(static_cast<int>(mWidth), static_cast<int>(mHeight));
+		for (size_t row = 0; row < mHeight; row++) {
+			for (size_t col = 0; col < mWidth; col++) {
+				transposedMatrix[col][row] = mRows[row][col];
+			}
+		}
+		if (inplace) {
+			swap(*this, transposedMatrix);
+			return *this;
+		}
+		else {
+			return transposedMatrix;
+		}
+	}
+
+	Matrixx Matrixx::identity(const int length)
+	{
+		Matrixx identityMatrix(length, length);
+		for (size_t row = 0; row < identityMatrix.mHeight; row++) {
+			for (size_t col = 0; col < identityMatrix.mWidth; col++) {
+				identityMatrix[row][col] = (row == col) ? 1.0 : 0.0;
+			}
+		}
+		return identityMatrix;
+	}
+
+	/*Matrixx Matrixx::zero(const int height, const int width)
+	{
+		Matrixx zeroMatrix(height, width);
+		for (size_t row = 0; row < zeroMatrix.mHeight; row++) {
+			for (size_t col = 0; col < zeroMatrix.mWidth; col++) {
+				zeroMatrix[row][col] = 0.0;
+			}
+		}
+		return zeroMatrix;
+	}*/
 
 	Roww& Matrixx::operator[](const size_t row)
 	{
@@ -322,6 +341,24 @@ namespace linalg {
 			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)];
 		}
 	}
+	const Roww& Matrixx::operator()(const int row) const
+	{
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight);
+			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mRows[row];
+		}
+		else {
+			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)];
+		}
+	}
+
 	double& Matrixx::operator()(const int row, const int col)
 	{
 		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
@@ -336,7 +373,27 @@ namespace linalg {
 		}
 
 		if (row >= 0) {
-			return mRows[row][col];
+			return mRows[row](col);
+		}
+		else {
+			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)](col);
+		}
+	}
+	const double& Matrixx::operator()(const int row, const int col) const
+	{
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mHeight);
+		exceptNum += ExceptionHandler::checkColumnIndex(col, mWidth);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight);
+			ColumnIndexArgument colIndexArg(col, mWidth);
+			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mRows[row](col);
 		}
 		else {
 			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)](col);
@@ -347,9 +404,7 @@ namespace linalg {
 	{
 		size_t sequence = 0;
 		for (double value : values) {
-			if (sequence < mSize) {
-				allocate(sequence, value);
-			}
+			allocate(sequence, value);
 			sequence++;
 		}
 		return *this;
@@ -372,7 +427,7 @@ namespace linalg {
 	}
 	Matrixx Matrixx::operator-() const
 	{
-		Matrixx negativeMatrix(*this);
+		Matrixx negativeMatrix(static_cast<int>(mHeight), static_cast<int>(mWidth));
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
 				negativeMatrix[row][col] = convertNegativeZero(-mRows[row][col]);
@@ -387,7 +442,7 @@ namespace linalg {
 		std::swap(leftMatrix.mHeight, rightMatrix.mHeight);
 		std::swap(leftMatrix.mWidth, rightMatrix.mWidth);
 	}
-	Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
+	/*Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
 	{
 		if (this == &rightMatrix) {
 			return *this;
@@ -396,7 +451,13 @@ namespace linalg {
 		Matrixx copyMatrix(rightMatrix);
 		swap(*this, copyMatrix);
 		return *this;
-	}
+	}*/
+	/*Matrixx& Matrixx::operator=(Matrixx&& rightMatrix)
+	{
+		Matrixx moveMatrix(std::move(rightMatrix));
+		swap(*this, moveMatrix);
+		return *this;
+	}*/
 	Matrixx& Matrixx::operator+=(const Matrixx& rightMatrix)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(mHeight, rightMatrix.mHeight);
@@ -768,23 +829,28 @@ namespace linalg {
 
 
 	Roww::Roww()
-		: Tensor(0), mEntries(nullptr)
+		: Tensor()
 	{
 	}
 	Roww::Roww(const int size)
+		: Tensor(size)
 	{
 		init(size);
 	}
-	Roww::Roww(const Roww& copyRow)
+	/*Roww::Roww(const Roww& copyRow)
 		: Roww(static_cast<int>(copyRow.mSize))
 	{
 		for (int col = 0; col < mSize; col++) {
 			mEntries[col] = copyRow[col];
 		}
-	}
-	linalg::Roww::~Roww()
+	}*/
+	/*Roww::Roww(Roww&& moveRow) noexcept
 	{
-	}
+		swap(*this, moveRow);
+	}*/
+	/*linalg::Roww::~Roww()
+	{
+	}*/
 	void Roww::init(const int size)
 	{
 		int exceptNum = ExceptionHandler::checkValidWidth(size);
@@ -796,7 +862,9 @@ namespace linalg {
 		}
 
 		mSize = size;
-		mEntries = std::make_unique<double[]>(mSize);
+
+		mEntries.clear();
+		mEntries.resize(mSize, 0.0);
 	}
 
 	double& Roww::operator[](const size_t col)
@@ -824,6 +892,23 @@ namespace linalg {
 		return mEntries[col];
 	}
 	double& Roww::operator()(const int col)
+	{
+		int exceptNum = ExceptionHandler::checkColumnIndex(col, mSize);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			ColumnIndexArgument colIndexArg(col, mSize);
+			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
+		if (col >= 0) {
+			return mEntries[col];
+		}
+		else {
+			return mEntries[static_cast<size_t>(static_cast<int>(mSize) + col)];
+		}
+	}
+	const double& Roww::operator()(const int col) const
 	{
 		int exceptNum = ExceptionHandler::checkColumnIndex(col, mSize);
 		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
@@ -882,7 +967,7 @@ namespace linalg {
 		std::swap(leftRow.mEntries, rightRow.mEntries);
 		std::swap(leftRow.mSize, rightRow.mSize);
 	}
-	Roww& Roww::operator=(const Roww& rightRow)
+	/*Roww& Roww::operator=(const Roww& rightRow)
 	{
 		if (this == &rightRow) {
 			return *this;
@@ -891,7 +976,13 @@ namespace linalg {
 		Roww copyRow(rightRow);
 		swap(*this, copyRow);
 		return *this;
-	}
+	}*/
+	/*Roww& Roww::operator=(Roww&& rightRow) noexcept
+	{
+		Roww moveRow(std::move(rightRow));
+		swap(*this, rightRow);
+		return *this;
+	}*/
 	Roww& Roww::operator+=(const Roww& rightRow)
 	{
 		int exceptNum = ExceptionHandler::checkWidth(mSize, rightRow.mSize);
@@ -904,7 +995,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Roww resultRow(*this);
+		Roww resultRow(static_cast<int>(mSize));
 		for (size_t col = 0; col < mSize; col++) {
 			resultRow[col] = convertNegativeZero(mEntries[col] + rightRow[col]);
 		}
@@ -923,7 +1014,7 @@ namespace linalg {
 			handler.handleException();
 		}
 		
-		Roww resultRow(*this);
+		Roww resultRow(static_cast<int>(mSize));
 		for (size_t col = 0; col < mSize; col++) {
 			resultRow[col] = convertNegativeZero(mEntries[col] - rightRow[col]);
 		}
@@ -945,9 +1036,9 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Roww resultRow(*this);
+		Roww resultRow(static_cast<int>(mSize));
 		for (size_t col = 0; col < mSize; col++) {
-			resultRow[col] /= divisor;
+			resultRow[col] = convertNegativeZero(mEntries[col] / divisor);
 		}
 		swap(*this, resultRow);
 		return *this;
@@ -1044,24 +1135,27 @@ namespace linalg {
 
 
 	Vectorr::Vectorr()
-		: Tensor(0),
-		mEntries(nullptr)
+		: Tensor()
 	{
 	}
 	Vectorr::Vectorr(const int size)
 	{
 		init(size);
 	}
-	Vectorr::Vectorr(const Vectorr& copyVector)
+	/*Vectorr::Vectorr(const Vectorr& copyVector)
 		: Vectorr(static_cast<int>(copyVector.mSize))
 	{
 		for (size_t row = 0; row < mSize; row++) {
 			mEntries[row] = copyVector[row];
 		}
-	}
-	Vectorr::~Vectorr()
+	}*/
+	/*Vectorr::Vectorr(Vectorr&& moveVector) noexcept
 	{
-	}
+		swap(*this, moveVector);
+	}*/
+	/*Vectorr::~Vectorr()
+	{
+	}*/
 	void Vectorr::init(const int size)
 	{
 		int exceptNum = ExceptionHandler::checkValidHeight(size);
@@ -1073,7 +1167,9 @@ namespace linalg {
 		}
 
 		mSize = size;
-		mEntries = std::make_unique<double[]>(mSize);
+
+		mEntries.clear();
+		mEntries.resize(mSize, 0.0);
 	}
 
 	double& Vectorr::operator[](const size_t row)
@@ -1117,14 +1213,29 @@ namespace linalg {
 			return mEntries[static_cast<size_t>(static_cast<int>(mSize) + row)];
 		}
 	}
+	const double& Vectorr::operator()(const int row) const
+	{
+		int exceptNum = ExceptionHandler::checkRowIndex(row, mSize);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mSize);
+			ExceptionHandler handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mEntries[row];
+		}
+		else {
+			return mEntries[static_cast<size_t>(static_cast<int>(mSize) + row)];
+		}
+	}
 
 	Vectorr& Vectorr::operator=(std::initializer_list<double> values)
 	{
 		size_t sequence = 0;
 		for (double value : values) {
-			if (sequence < mSize) {
-				allocate(sequence, value);
-			}
+			allocate(sequence, value);
 			sequence++;
 		}
 		return *this;
@@ -1159,7 +1270,7 @@ namespace linalg {
 		std::swap(leftVector.mEntries, rightVector.mEntries);
 		std::swap(leftVector.mSize, rightVector.mSize);
 	}
-	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
+	/*Vectorr& Vectorr::operator=(const Vectorr& rightVector)
 	{
 		if (this == &rightVector) {
 			return *this;
@@ -1168,7 +1279,13 @@ namespace linalg {
 		Vectorr copyVector(rightVector);
 		swap(*this, copyVector);
 		return *this;
-	}
+	}*/
+	/*Vectorr& Vectorr::operator=(Vectorr&& rightVector) noexcept
+	{
+		Vectorr moveVector(std::move(rightVector));
+		swap(*this, moveVector);
+		return *this;
+	}*/
 	Vectorr& Vectorr::operator+=(const Vectorr& rightVector)
 	{
 		int exceptNum = ExceptionHandler::checkHeight(mSize, rightVector.mSize);
@@ -1181,7 +1298,7 @@ namespace linalg {
 			handler.handleException();
 		}
 		
-		Vectorr resultVector(*this);
+		Vectorr resultVector(static_cast<int>(mSize));
 		for (size_t row = 0; row < mSize; row++) {
 			resultVector[row] = convertNegativeZero(mEntries[row] + rightVector[row]);
 		}
@@ -1200,7 +1317,7 @@ namespace linalg {
 			handler.handleException();
 		}
 		
-		Vectorr resultVector(*this);
+		Vectorr resultVector(static_cast<int>(mSize));
 		for (size_t row = 0; row < mSize; row++) {
 			resultVector[row] = convertNegativeZero(mEntries[row] - rightVector[row]);
 		}
@@ -1222,9 +1339,9 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Vectorr resultVector(*this);
+		Vectorr resultVector(static_cast<int>(mSize));
 		for (size_t row = 0; row < mSize; row++) {
-			resultVector[row] /= divisor;
+			resultVector[row] = convertNegativeZero(mEntries[row] / divisor);
 		}
 		swap(*this, resultVector);
 		return *this;

@@ -13,8 +13,13 @@ int main()
 			7, 8, 9;
 		cout << matrix << endl;
 		cout << "0행 1열 원소 : " << matrix(0, 1) << endl << endl;
-		cout << "1행 : \n" << matrix[1] << endl;
+		cout << "1행 : \n" << matrix(1) << endl;
+
 		cout << "마지막 열 : \n" << matrix.getColumn(-1) << endl;
+
+		cout << "마지막 행 : \n" << matrix.getRow(-1) << endl;
+		cout << "마지막 행 : \n" << matrix(-1) << endl;
+		
 		cout << "마지막 행 첫번째 원소 : " << matrix(-1, 0) << endl;
 
 		cout << endl << endl << endl;
@@ -69,6 +74,14 @@ int main()
 			(a10*b00 + a11*b10) & (a10*b01 + a11*b11);
 		
 		cout << a * b << endl;
+		cout << blockMultiply << endl;
+
+		//cout << Matrixx::identity(1) + Matrixx::identity(2) << endl;
+		
+		cout << endl << endl << endl;
+		cout << "전치행렬" << endl;
+		cout << blockMultiply.transpose() << endl;
+		blockMultiply.transpose(true);
 		cout << blockMultiply << endl;
 	}
 	catch (const logic_error& e) {
