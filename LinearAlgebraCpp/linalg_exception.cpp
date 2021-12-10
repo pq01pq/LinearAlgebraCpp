@@ -268,5 +268,4 @@ namespace linalg {
 	{
 		return what;
 	}
-	
 }
