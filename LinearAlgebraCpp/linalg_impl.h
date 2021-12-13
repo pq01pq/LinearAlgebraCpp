@@ -7,7 +7,7 @@
 #include <sstream>
 
 namespace linalg {
-
+	// Function implemented classes
 	class Matrixx::Impl;
 	class Roww::Impl;
 	class Vectorr::Impl;

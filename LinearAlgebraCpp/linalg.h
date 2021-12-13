@@ -2,13 +2,13 @@
 
 #include "linalg_allocate.h"
 
-
 #include <iostream>
 #include <string>
 #include <initializer_list>
 
 namespace linalg {
-
+	// User interface classes
+	// Implementaions are in linalg_impl.h
 	class Tensorr;
 	class Matrixx;
 	class Roww;
