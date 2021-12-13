@@ -139,13 +139,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="linalg_allocate.cpp" />
     <ClCompile Include="linalg_exception.cpp" />
     <ClCompile Include="linalg.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="linalg_impl.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="linalg_allocate.h" />
     <ClInclude Include="linalg_exception.h" />
     <ClInclude Include="linalg.h" />
+    <ClInclude Include="linalg_impl.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

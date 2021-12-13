@@ -84,7 +84,7 @@ int main()
 		blockMultiply.transpose(true);
 		cout << blockMultiply << endl;
 
-		a + b;
+		//a + b;
 	}
 	catch (const logic_error& e) {
 		cout << "logic error" << endl;

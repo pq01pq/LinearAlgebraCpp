@@ -1,57 +1,29 @@
 #pragma once
+
+#include "linalg_allocate.h"
+
+
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <vector>
 #include <initializer_list>
-#include "linalg_exception.h"
 
 namespace linalg {
 
-	class Allocator;
-	class Allocatable;
-	class Tensor;
+	class Tensorr;
 	class Matrixx;
 	class Roww;
 	class Vectorr;
 
-	/*
-	* Allocator class is used for allocating values into linear algebra containers.
-	* It allocates values when it encounters operator '<<' and ',' with increasing sequence.
-	*/
-	class Allocator {
-		friend class Allocatable;
-	public:
-		Allocator(Allocatable& target, const size_t sequence);
-		~Allocator();
-		Allocator& operator,(const double value);
-		
-	private:
-		Allocatable& target;
-		size_t sequence;
-	};
-
-	// Mix-in class of linear algebra containers(== Java interface)
-	class Allocatable {
-		friend class Allocator;
-	protected:
-		inline virtual void allocate(const size_t sequence, const double value) {}
-	};
-
 	// Base class of vectors
-	class Tensor {
+	class Tensorr {
 	public:
-		//~Tensor();
-		const size_t size() const;
+		virtual ~Tensorr() = default;
+		virtual const size_t size() const = 0;
 
-		inline virtual const std::string str() const { return "NaN"; }
+		virtual const std::string str() const = 0;
 	protected:
-		Tensor();
-		Tensor(int size);
-
-		size_t mSize;
-
-		const double convertNegativeZero(const double value) const;
+		Tensorr() = default;
+		static const double convertNegativeZero(const double value);
 	};
 
 	/*
@@ -65,24 +37,24 @@ namespace linalg {
 	* 
 	* Copy constructor, copy operator=, move constructor, move operator=, destructor : deprecated for Rule of Zero
 	*/
-	class Matrixx : public Tensor, protected Allocatable {
+	class Matrixx : public Tensorr, public Allocatablee {
 		friend class Roww;
 		friend class Vectorr;
 	public:
-		Matrixx();
-		Matrixx(const int height, const int width);
-		//Matrixx(const Matrixx& copyMatrix);
+		//Matrixx();
+		Matrixx(const int height = 1, const int width = 1);
+		Matrixx(const Matrixx& copyMatrix);
 		//Matrixx(Matrixx&& moveMatrix) noexcept;
 		explicit Matrixx(const Roww& copyRow);
 		explicit Matrixx(const Vectorr& copyVector);
-		//~Matrixx();
-		void init(const int height, const int width); // throws std::length_error
+		virtual ~Matrixx() = default;
+		void init(const int height = 1, const int width = 1); // throws std::length_error
 
 		void reduce(); // == toEchelonForm + toReducedEchelonForm
 		void toEchelonForm();
 		void toReducedEchelonForm(); // throws std::logic_error
 
-		friend bool isEchelonForm(const Matrixx& matrix);
+		bool isEchelonForm();
 
 		Matrixx block(const size_t beginRow, const size_t beginCol,
 			const size_t blockHeight, const size_t blockWidth) const; // throws std::out_of_range
@@ -93,23 +65,23 @@ namespace linalg {
 		//static Matrixx zero(const int height, const int width); // throws std::length_error, create zero matrix
 		
 		// Traditional array index reference method (only positive index)
-		Roww& operator[](const size_t row); // throws std::out_of_range
 		const Roww& operator[](const size_t row) const; // throws std::out_of_range
+		Roww& operator[](const size_t row); // throws std::out_of_range
 
 		// Modified index reference method (positive and negative index)
-		Roww& operator()(const int row); // throws std::out_of_range
 		const Roww& operator()(const int row) const; // throws std::out_of_range
-		double& operator()(const int row, const int col); // throws std::out_of_range
+		Roww& operator()(const int row); // throws std::out_of_range
 		const double& operator()(const int row, const int col) const; // throws std::out_of_range
+		double& operator()(const int row, const int col); // throws std::out_of_range
 		// (recommended) operator() can catch both row and column index out of range exception.
 
-		Matrixx& operator=(std::initializer_list<double> values); // 1st way to initialize entries
-		Allocator& operator<<(const double value); // 2nd way to initialize entries
+		Allocatorr& operator<<(const double value); // 1st way to initialize entries
+		Matrixx& operator=(const std::initializer_list<double> values); // 2nd way to initialize entries
 
 		Matrixx operator+() const;
 		Matrixx operator-() const;
 
-		//Matrixx& operator=(const Matrixx& rightMatrix);
+		Matrixx& operator=(const Matrixx& rightMatrix);
 		//Matrixx& operator=(Matrixx&& rightMatrix) noexcept;
 		Matrixx& operator+=(const Matrixx& rightMatrix); // throws std::logic_error
 		Matrixx& operator-=(const Matrixx& rightMatrix); // throws std::logic_error
@@ -129,8 +101,10 @@ namespace linalg {
 
 		friend bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 
-		const size_t getHeight() const;
-		const size_t getWidth() const;
+		virtual const size_t size() const;
+
+		const size_t height() const;
+		const size_t width() const;
 
 		Roww getRow(const int row) const; // throws std::out_of_range
 		Vectorr getColumn(const int col) const; // throws std::out_of_range
@@ -140,22 +114,25 @@ namespace linalg {
 	protected:
 		virtual void allocate(const size_t sequence, const double value) override;
 	private:
-		size_t mHeight, mWidth;
+		class Impl;
+		std::unique_ptr<Impl> mMatrix;
+
+		/*size_t mHeight, mWidth;
 		std::vector<Roww> mRows;
 
 		struct Pivot {
 			size_t row, col;
 			double entry;
-		};
+		};*/
 
 		/*
 		* "컴퓨터 프로그램은 보통 한 열에서 가장 절댓값이 큰 성분을 추축으로 선정한다."
 		* - [David C. Lay et al] Linear Algebra and Its Applications (선형대수학) 1.2 -
 		*/
-		const Pivot findPivot(const size_t beginRow, const size_t beginCol) const; // Find largest absolute value of entries
-		const void replaceRowsUnder(const Pivot pivot); // Row replacing operation in forward phase
-		const Pivot getPivot(const size_t row) const; // Get existing pivot from row in echelon form matrix
-		const void replaceRowsOver(const Pivot pivot); // Row replacing operation in backward phase
+		//const Pivot findPivot(const size_t beginRow, const size_t beginCol) const; // Find largest absolute value of entries
+		//const void replaceRowsUnder(const Pivot pivot); // Row replacing operation in forward phase
+		//const Pivot getPivot(const size_t row) const; // Get existing pivot from row in echelon form matrix
+		//const void replaceRowsOver(const Pivot pivot); // Row replacing operation in backward phase
 
 		friend void swap(Matrixx& leftMatrix, Matrixx& rightMatrix) noexcept;
 	};
@@ -182,32 +159,31 @@ namespace linalg {
 
 	std::ostream& operator<<(std::ostream& outputStream, const Matrixx& outputMatrix);
 
-	class Roww : public Tensor, protected Allocatable {
+	class Roww : public Tensorr, public Allocatablee {
 		friend class Matrixx;
-		friend class Vectorr;
 	public:
-		Roww();
-		explicit Roww(const int size);
-		//Roww(const Roww& copyRow);
+		//Roww();
+		explicit Roww(const int size = 1);
+		Roww(const Roww& copyRow);
 		//Roww(Roww&& moveRow) noexcept;
-		//~Roww();
-		void init(const int size);
+		virtual ~Roww() = default;
+		void init(const int size = 1);
 
 		// Traditional array index reference method (only positive index)
-		double& operator[](const size_t col); // throws std::out_of_range
 		const double& operator[](const size_t col) const; // throws std::out_of_range
+		double& operator[](const size_t col); // throws std::out_of_range
 
 		// Modified index reference method (positive and negative index)
-		double& operator()(const int col); // throws std::out_of_range
 		const double& operator()(const int col) const; // throws std::out_of_range
+		double& operator()(const int col); // throws std::out_of_range
 
-		Roww& operator=(std::initializer_list<double> values); // 1st way to initialize entries
-		Allocator& operator<<(const double value); // 2nd way to initialize entries
+		Allocatorr& operator<<(const double value); // 1st way to initialize entries
+		Roww& operator=(const std::initializer_list<double> values); // 2nd way to initialize entries
 
 		Roww operator+() const;
 		Roww operator-() const;
 
-		//Roww& operator=(const Roww& rightRow);
+		Roww& operator=(const Roww& rightRow);
 		//Roww& operator=(Roww&& rightRow) noexcept;
 		Roww& operator+=(const Roww& rightRow); // throws std::logic_error
 		Roww& operator-=(const Roww& rightRow); // throws std::logic_error
@@ -219,11 +195,17 @@ namespace linalg {
 
 		friend bool operator==(const Roww& leftRow, const Roww& rightRow);
 
+		virtual const size_t size() const;
+		const size_t width() const;
+
 		virtual const std::string str() const override;
 	protected:
 		virtual void allocate(const size_t sequence, const double value) override;
 	private:
-		std::vector<double> mEntries;
+		class Impl;
+		std::unique_ptr<Impl> mRow;
+
+		/*std::vector<double> mEntries;*/
 
 		friend void swap(Roww& leftRow, Roww& rightRow) noexcept;
 	};
@@ -241,32 +223,31 @@ namespace linalg {
 
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow);
 
-	class Vectorr : public Tensor, protected Allocatable {
+	class Vectorr : public Tensorr, public Allocatablee {
 		friend class Matrixx;
-		friend class Roww;
 	public:
-		Vectorr();
-		explicit Vectorr(const int size);
-		//Vectorr(const Vectorr& copyVector);
+		//Vectorr();
+		explicit Vectorr(const int size = 1);
+		Vectorr(const Vectorr& copyVector);
 		//Vectorr(Vectorr&& moveVector) noexcept;
-		//~Vectorr();
-		void init(const int size);
+		virtual ~Vectorr() = default;
+		void init(const int size = 1);
 
 		// Traditional array index reference method (only positive index)
-		double& operator[](const size_t row); // throws std::out_of_range
 		const double& operator[](const size_t row) const; // throws std::out_of_range
+		double& operator[](const size_t row); // throws std::out_of_range
 
 		// Modified index reference method (positive and negative index)
-		double& operator()(const int row); // throws std::out_of_range
 		const double& operator()(const int row) const; // throws std::out_of_range
+		double& operator()(const int row); // throws std::out_of_range
 
-		Vectorr& operator=(std::initializer_list<double> values); // 1st way to initialize entries
-		Allocator& operator<<(const double value); // 2nd way to initialize entries
+		Allocatorr& operator<<(const double value); // 1st way to initialize entries
+		Vectorr& operator=(const std::initializer_list<double> values); // 2nd way to initialize entries
 
 		Vectorr operator+() const;
 		Vectorr operator-() const;
 
-		//Vectorr& operator=(const Vectorr& rightVector);
+		Vectorr& operator=(const Vectorr& rightVector);
 		//Vectorr& operator=(Vectorr&& rightVector) noexcept;
 		Vectorr& operator+=(const Vectorr& rightVector); // throws std::logic_error
 		Vectorr& operator-=(const Vectorr& rightVector); // throws std::logic_error
@@ -281,11 +262,17 @@ namespace linalg {
 
 		friend bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
 
+		virtual const size_t size() const;
+		const size_t height() const;
+
 		virtual const std::string str() const override;
 	protected:
 		virtual void allocate(const size_t sequence, const double value) override;
 	private:
-		std::vector<double> mEntries;
+		class Impl;
+		std::unique_ptr<Impl> mVector;
+
+		/*std::vector<double> mEntries;*/
 		
 		friend void swap(Vectorr& leftVector, Vectorr& rightVector) noexcept;
 	};
@@ -303,3 +290,5 @@ namespace linalg {
 
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector);
 }
+
+#include "linalg_impl.h"

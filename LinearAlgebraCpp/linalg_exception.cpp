@@ -1,27 +1,26 @@
 #include "linalg_exception.h"
 
-
 namespace linalg {
-	ExceptionHandler::ExceptionHandler(const ExceptionState exceptionState, const int exceptionNumber)
+	ExceptionHandlerr::ExceptionHandlerr(const ExceptionState exceptionState, const int exceptionNumber)
 		: mExceptionState(exceptionState), mExceptionNumber(exceptionNumber)
 	{
 	}
-	ExceptionHandler::~ExceptionHandler()
+	ExceptionHandlerr::~ExceptionHandlerr()
 	{
 	}
-	void ExceptionHandler::setExceptionState(const ExceptionState exceptionState)
+	void ExceptionHandlerr::setExceptionState(const ExceptionState exceptionState)
 	{
 		this->mExceptionState = exceptionState;
 	}
-	void ExceptionHandler::setExceptionNumber(const int exceptionNumber)
+	void ExceptionHandlerr::setExceptionNumber(const int exceptionNumber)
 	{
 		this->mExceptionNumber = exceptionNumber;
 	}
-	void ExceptionHandler::addArgument(ExceptionArgument& exceptionArg)
+	void ExceptionHandlerr::addArgument(ExceptionArgument& exceptionArg)
 	{
 		mExceptionArgs.push_back(&exceptionArg);
 	}
-	void ExceptionHandler::handleException()
+	void ExceptionHandlerr::handleException()
 	{
 		switch (mExceptionState) {
 		case ExceptionState::LengthError:
@@ -37,7 +36,7 @@ namespace linalg {
 		}
 	}
 
-	const std::string ExceptionHandler::getLengthErrorString() const
+	const std::string ExceptionHandlerr::getLengthErrorString() const
 	{
 		std::string exceptStr;
 		switch (mExceptionNumber) {
@@ -58,7 +57,7 @@ namespace linalg {
 		}
 		return exceptStr;
 	}
-	const std::string ExceptionHandler::getOutOfRangeString() const
+	const std::string ExceptionHandlerr::getOutOfRangeString() const
 	{
 		std::string exceptStr;
 		switch (mExceptionNumber) {
@@ -80,7 +79,7 @@ namespace linalg {
 		}
 		return exceptStr;
 	}
-	const std::string ExceptionHandler::getArithmeticExceptionString() const
+	const std::string ExceptionHandlerr::getArithmeticExceptionString() const
 	{
 		std::string exceptStr;
 		switch (mExceptionNumber) {
@@ -106,7 +105,7 @@ namespace linalg {
 		}
 		return exceptStr;
 	}
-	const std::string ExceptionHandler::getEtcExceptionString() const
+	const std::string ExceptionHandlerr::getEtcExceptionString() const
 	{
 		if (mExceptionArgs.size() > 0) {
 			return mExceptionArgs[0]->str();
@@ -114,14 +113,14 @@ namespace linalg {
 		return "Logic Error";
 	}
 
-	const int ExceptionHandler::checkValidHeight(const int height)
+	const int ExceptionHandlerr::checkValidHeight(const int height)
 	{
 		if (height < 1) {
 			return static_cast<int>(LengthState::InvalidHeight);
 		}
 		return static_cast<int>(LengthState::NoExcept);
 	}
-	const int ExceptionHandler::checkValidWidth(const int width)
+	const int ExceptionHandlerr::checkValidWidth(const int width)
 	{
 		if (width < 1) {
 			return static_cast<int>(LengthState::InvalidWidth);
@@ -129,45 +128,45 @@ namespace linalg {
 		return static_cast<int>(LengthState::NoExcept);
 	}
 
-	const int ExceptionHandler::checkRowIndex(const int row, const size_t height)
+	const int ExceptionHandlerr::checkRowIndex(const int row, const size_t height)
 	{
 		if (row >= static_cast<int>(height) || row < -static_cast<int>(height)) {
 			return static_cast<int>(IndexState::RowIndexOutOfRange);
 		}
 		return static_cast<int>(IndexState::NoExcept);
 	}
-	const int ExceptionHandler::checkRowIndex(const size_t row, const size_t height)
+	const int ExceptionHandlerr::checkRowIndex(const size_t row, const size_t height)
 	{
-		return ExceptionHandler::checkRowIndex(static_cast<int>(row), height);
+		return ExceptionHandlerr::checkRowIndex(static_cast<int>(row), height);
 	}
 
-	const int ExceptionHandler::checkColumnIndex(const int col, const size_t width)
+	const int ExceptionHandlerr::checkColumnIndex(const int col, const size_t width)
 	{
 		if (col >= static_cast<int>(width) || col < -static_cast<int>(width)) {
 			return static_cast<int>(IndexState::ColumnIndexOutOfRange);
 		}
 		return static_cast<int>(IndexState::NoExcept);
 	}
-	const int ExceptionHandler::checkColumnIndex(const size_t col, const size_t width)
+	const int ExceptionHandlerr::checkColumnIndex(const size_t col, const size_t width)
 	{
-		return ExceptionHandler::checkColumnIndex(static_cast<int>(col), width);
+		return ExceptionHandlerr::checkColumnIndex(static_cast<int>(col), width);
 	}
 
-	const int ExceptionHandler::checkHeight(const size_t height1, const size_t height2)
+	const int ExceptionHandlerr::checkHeight(const size_t height1, const size_t height2)
 	{
 		if (height1 != height2) {
 			return static_cast<int>(OperationState::HeightDoNotMatch);
 		}
 		return static_cast<int>(OperationState::NoExcept);
 	}
-	const int ExceptionHandler::checkWidth(const size_t width1, const size_t width2)
+	const int ExceptionHandlerr::checkWidth(const size_t width1, const size_t width2)
 	{
 		if (width1 != width2) {
 			return static_cast<int>(OperationState::WidthDoNotMatch);
 		}
 		return static_cast<int>(OperationState::NoExcept);
 	}
-	const int ExceptionHandler::checkJoinLength(const size_t width, const size_t height)
+	const int ExceptionHandlerr::checkJoinLength(const size_t width, const size_t height)
 	{
 		if (width != height) {
 			return static_cast<int>(OperationState::JoinLengthDoNotMatch);
