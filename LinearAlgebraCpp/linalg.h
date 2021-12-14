@@ -18,6 +18,7 @@ namespace linalg {
 	class Tensorr {
 	public:
 		virtual ~Tensorr() = default;
+
 		virtual const size_t size() const = 0;
 
 		virtual const std::string str() const = 0;
@@ -62,7 +63,6 @@ namespace linalg {
 		Matrixx transpose(const bool inplace = false);
 
 		static Matrixx identity(const int length); // throws std::length_error, create elementary matrix(or unit matrix)
-		//static Matrixx zero(const int height, const int width); // throws std::length_error, create zero matrix
 		
 		// Traditional array index reference method (only positive index)
 		const Roww& operator[](const size_t row) const; // throws std::out_of_range
@@ -121,10 +121,9 @@ namespace linalg {
 		friend bool operator==(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 		friend bool operator!=(const Matrixx& leftMatrix, const Matrixx& rightMatrix);
 
-		virtual const size_t size() const;
-
 		const size_t height() const;
 		const size_t width() const;
+		virtual const size_t size() const;
 
 		Roww getRow(const int row) const; // throws std::out_of_range
 		Vectorr getColumn(const int col) const; // throws std::out_of_range
@@ -195,8 +194,8 @@ namespace linalg {
 		friend bool operator==(const Roww& leftRow, const Roww& rightRow);
 		friend bool operator!=(const Roww& leftRow, const Roww& rightRow);
 
-		virtual const size_t size() const;
 		const size_t width() const;
+		virtual const size_t size() const;
 
 		virtual const std::string str() const override;
 	protected:
@@ -266,8 +265,8 @@ namespace linalg {
 		friend bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
 		friend bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector);
 
-		virtual const size_t size() const;
 		const size_t height() const;
+		virtual const size_t size() const;
 
 		virtual const std::string str() const override;
 	protected:

@@ -16,6 +16,7 @@ namespace linalg {
 	class Tensorr::Impl {
 	public:
 		virtual ~Impl() = default;
+
 		virtual const size_t size() const = 0;
 
 		virtual const std::string str() const = 0;
@@ -79,14 +80,14 @@ namespace linalg {
 		Impl& operator|=(const Impl& lowerMatrixImpl); // throws std::logic_error
 		Impl& operator|=(const Roww::Impl& lowerRowImpl); // throws std::logic_error
 
-		// Vector equation operation
-		Vectorr::Impl operator*(const Vectorr::Impl& rightVectorImpl) const; // throws std::logic_error
-
 		Impl operator+(const Impl& rightMatrixImpl) const;
 		Impl operator-(const Impl& rightMatrixImpl) const;
 		Impl operator*(const double multiplier) const;
 		Impl operator*(const Impl& rightMatrixImpl) const;
 		Impl operator/(const double divisor) const;
+
+		// Vector equation operation
+		Vectorr::Impl operator*(const Vectorr::Impl& rightVectorImpl) const; // throws std::logic_error
 
 		// Horizontal append operation
 		Impl operator&(const Impl& rightMatrixImpl) const;

@@ -35,12 +35,10 @@ namespace linalg {
 	{
 		impl->reduce();
 	}
-
 	void Matrixx::toEchelonForm()
 	{
 		impl->toEchelonForm();
 	}
-
 	void Matrixx::toReducedEchelonForm()
 	{
 		impl->toReducedEchelonForm();
@@ -79,17 +77,6 @@ namespace linalg {
 		return Impl::identity(length);
 	}
 
-	/*Matrixx Matrixx::zero(const int height, const int width)
-	{
-		Matrixx zeroMatrix(height, width);
-		for (size_t row = 0; row < zeroMatrix.mHeight; row++) {
-			for (size_t col = 0; col < zeroMatrix.mWidth; col++) {
-				zeroMatrix[row][col] = 0.0;
-			}
-		}
-		return zeroMatrix;
-	}*/
-
 	const Roww& Matrixx::operator[](const size_t row) const
 	{
 		return (*impl)[row];
@@ -117,7 +104,6 @@ namespace linalg {
 		return const_cast<double&>(static_cast<const Matrixx&>(*this)(row, col));
 	}
 
-	
 	Allocatorr& Matrixx::operator<<(const double value)
 	{
 		impl->allocate(0, value);
@@ -146,6 +132,7 @@ namespace linalg {
 	{
 		std::swap(leftMatrix.impl, rightMatrix.impl);
 	}
+
 	Matrixx& Matrixx::operator=(const Matrixx& rightMatrix)
 	{
 		if (this == &rightMatrix) {
@@ -197,6 +184,7 @@ namespace linalg {
 		*impl &= *(rightVector.impl);
 		return *this;
 	}
+
 	Matrixx& Matrixx::operator|=(const Matrixx& lowerMatrix)
 	{
 		*impl |= *(lowerMatrix.impl);
@@ -228,13 +216,14 @@ namespace linalg {
 	{
 		return *(leftMatrix.impl) * *(rightMatrix.impl);
 	}
-	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector)
-	{
-		return Vectorr(*(leftMatrix.impl) * *(rightVector.impl));
-	}
 	Matrixx operator/(const Matrixx& leftMatrix, const double divisor)
 	{
 		return *(leftMatrix.impl) / divisor;
+	}
+
+	Vectorr operator*(const Matrixx& leftMatrix, const Vectorr& rightVector)
+	{
+		return Vectorr(*(leftMatrix.impl) * *(rightVector.impl));
 	}
 
 	Matrixx operator&(const Matrixx& leftMatrix, const Matrixx& rightMatrix)
@@ -286,11 +275,6 @@ namespace linalg {
 		return outputStream;
 	}
 
-	const size_t Matrixx::size() const
-	{
-		return impl->height() * impl->width();
-	}
-
 	const size_t Matrixx::height() const
 	{
 		return impl->height();
@@ -298,6 +282,10 @@ namespace linalg {
 	const size_t Matrixx::width() const
 	{
 		return impl->width();
+	}
+	const size_t Matrixx::size() const
+	{
+		return impl->size();
 	}
 
 	Roww Matrixx::getRow(const int row) const
@@ -385,6 +373,7 @@ namespace linalg {
 	{
 		std::swap(leftRow.impl, rightRow.impl);
 	}
+
 	Roww& Roww::operator=(const Roww& rightRow)
 	{
 		if (this == &rightRow) {
@@ -447,10 +436,12 @@ namespace linalg {
 	{
 		return *(leftRow.impl) / divisor;
 	}
+
 	Roww operator&(const Roww& leftRow, const Roww& rightRow)
 	{
 		return *(leftRow.impl) & *(rightRow.impl);
 	}
+
 	bool operator==(const Roww& leftRow, const Roww& rightRow)
 	{
 		return *(leftRow.impl) == *(rightRow.impl);
@@ -459,19 +450,20 @@ namespace linalg {
 	{
 		return *(leftRow.impl) != *(rightRow.impl);
 	}
+
 	std::ostream& operator<<(std::ostream& outputStream, const Roww& outputRow)
 	{
 		outputStream << outputRow.str();
 		return outputStream;
 	}
 
-	const size_t Roww::size() const
-	{
-		return impl->width();
-	}
 	const size_t Roww::width() const
 	{
 		return impl->width();
+	}
+	const size_t Roww::size() const
+	{
+		return impl->size();
 	}
 
 	const std::string Roww::str() const
@@ -536,7 +528,6 @@ namespace linalg {
 		impl->allocate(values);
 		return *this;
 	}
-	
 
 	Vectorr Vectorr::operator+() const
 	{
@@ -551,6 +542,7 @@ namespace linalg {
 	{
 		std::swap(leftVector.impl, rightVector.impl);
 	}
+
 	Vectorr& Vectorr::operator=(const Vectorr& rightVector)
 	{
 		if (this == &rightVector) {
@@ -609,7 +601,6 @@ namespace linalg {
 	{
 		return *(leftVector.impl) * multiplier;
 	}
-	
 	Vectorr operator/(const Vectorr& leftVector, const double divisor)
 	{
 		return *(leftVector.impl) / divisor;
@@ -619,6 +610,7 @@ namespace linalg {
 	{
 		return *(upperVector.impl) | *(lowerVector.impl);
 	}
+
 	bool operator==(const Vectorr& leftVector, const Vectorr& rightVector)
 	{
 		return *(leftVector.impl) == *(rightVector.impl);
@@ -627,19 +619,20 @@ namespace linalg {
 	{
 		return *(leftVector.impl) != *(rightVector.impl);
 	}
+
 	std::ostream& operator<<(std::ostream& outputStream, const Vectorr& outputVector)
 	{
 		outputStream << outputVector.str();
 		return outputStream;
 	}
 
-	const size_t Vectorr::size() const
-	{
-		return impl->height();
-	}
 	const size_t Vectorr::height() const
 	{
 		return impl->height();
+	}
+	const size_t Vectorr::size() const
+	{
+		return impl->size();
 	}
 
 	const std::string Vectorr::str() const

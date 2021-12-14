@@ -441,7 +441,7 @@ namespace linalg {
 	}
 	Matrixx::Impl& Matrixx::Impl::operator&=(const Vectorr::Impl& rightVectorImpl)
 	{
-		return (*this &= Impl(rightVectorImpl));
+		return *this &= Impl(rightVectorImpl);
 	}
 	
 	Matrixx::Impl& Matrixx::Impl::operator|=(const Impl& lowerMatrixImpl)
@@ -472,30 +472,7 @@ namespace linalg {
 	}
 	Matrixx::Impl& Matrixx::Impl::operator|=(const Roww::Impl& lowerRowImpl)
 	{
-		return (*this |= Impl(lowerRowImpl));
-	}
-
-	Vectorr::Impl Matrixx::Impl::operator*(const Vectorr::Impl& rightVectorImpl) const
-	{
-		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightVectorImpl.mHeight);
-		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
-			LengthArgument leftLengthArg(mHeight, mWidth);
-			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
-			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
-			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
-			handler.addArgument(operationArg);
-			handler.handleException();
-		}
-
-		Vectorr::Impl resultVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			double dotProduct = 0.0;
-			for (size_t join = 0; join < mWidth; join++) {
-				dotProduct += mRows[row][join] * rightVectorImpl[join];
-			}
-			resultVectorImpl[row] = dotProduct;
-		}
-		return resultVectorImpl;
+		return *this |= Impl(lowerRowImpl);
 	}
 
 	Matrixx::Impl Matrixx::Impl::operator+(const Impl& rightMatrixImpl) const
@@ -527,6 +504,29 @@ namespace linalg {
 		Impl resultMatrixImpl(*this);
 		resultMatrixImpl /= divisor;
 		return resultMatrixImpl;
+	}
+
+	Vectorr::Impl Matrixx::Impl::operator*(const Vectorr::Impl& rightVectorImpl) const
+	{
+		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightVectorImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Vectorr::Impl resultVectorImpl(static_cast<int>(mHeight));
+		for (size_t row = 0; row < mHeight; row++) {
+			double dotProduct = 0.0;
+			for (size_t join = 0; join < mWidth; join++) {
+				dotProduct += mRows[row][join] * rightVectorImpl[join];
+			}
+			resultVectorImpl[row] = dotProduct;
+		}
+		return resultVectorImpl;
 	}
 
 	Matrixx::Impl Matrixx::Impl::operator&(const Impl& rightMatrixImpl) const
@@ -669,6 +669,7 @@ namespace linalg {
 	{
 		return const_cast<double&>(static_cast<const Impl&>(*this)[col]);
 	}
+
 	const double& Roww::Impl::operator()(const int col) const
 	{
 		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
@@ -785,6 +786,7 @@ namespace linalg {
 		swap(resultRowImpl);
 		return *this;
 	}
+
 	Roww::Impl& Roww::Impl::operator&=(const Impl& rightRowImpl)
 	{
 		Impl appendedRowImpl(static_cast<int>(mWidth + rightRowImpl.mWidth));
@@ -926,6 +928,7 @@ namespace linalg {
 	{
 		return const_cast<double&>(static_cast<const Impl&>(*this)[row]);
 	}
+
 	const double& Vectorr::Impl::operator()(const int row) const
 	{
 		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
@@ -1142,5 +1145,4 @@ namespace linalg {
 		}
 		return vectorString;
 	}
-	
 }
