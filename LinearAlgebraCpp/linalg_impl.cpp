@@ -1,26 +1,28 @@
 #include "linalg_impl.h"
 
 namespace linalg {
+
+	const double Tensorr::Impl::convertNegativeZero(const double value)
+	{
+		return (value == -0.0) ? 0.0 : value;
+	}
+
 	Matrixx::Impl::Impl(const int height, const int width)
 	{
 		init(height, width);
 	}
-	/*Matrixx::Matrixx(Matrixx&& moveMatrix) noexcept
-	{
-		swap(*this, moveMatrix);
-	}*/
-	Matrixx::Impl::Impl(const Roww& copyRow)
-		: Impl(1, static_cast<int>(copyRow.width()))
+	Matrixx::Impl::Impl(const Roww::Impl& copyRowImpl)
+		: Impl(1, static_cast<int>(copyRowImpl.width()))
 	{
 		for (size_t col = 0; col < mHeight; col++) {
-			mRows[0][col] = copyRow[col];
+			mRows[0][col] = copyRowImpl[col];
 		}
 	}
-	Matrixx::Impl::Impl(const Vectorr& copyVector)
-		: Impl(static_cast<int>(copyVector.height()), 1)
+	Matrixx::Impl::Impl(const Vectorr::Impl& copyVectorImpl)
+		: Impl(static_cast<int>(copyVectorImpl.height()), 1)
 	{
 		for (size_t row = 0; row < mHeight; row++) {
-			mRows[row][0] = copyVector[row];
+			mRows[row][0] = copyVectorImpl[row];
 		}
 	}
 	void Matrixx::Impl::init(const int height, const int width)
@@ -38,7 +40,7 @@ namespace linalg {
 		mWidth = width;
 
 		mRows.clear();
-		mRows.resize(mHeight, Roww(width));
+		mRows.resize(mHeight, Roww::Impl(width));
 	}
 
 	void Matrixx::Impl::reduce()
@@ -89,7 +91,7 @@ namespace linalg {
 	const void Matrixx::Impl::replaceRowsUnder(const Pivot pivot)
 	{
 		for (size_t row = pivot.row + 1; row < mHeight; row++) {
-			mRows[row] -= (mRows[row][pivot.col] / pivot.entry) * mRows[pivot.row];
+			mRows[row] -= mRows[pivot.row] * (mRows[row][pivot.col] / pivot.entry);
 		}
 	}
 
@@ -126,7 +128,7 @@ namespace linalg {
 	const void Matrixx::Impl::replaceRowsOver(const Pivot pivot)
 	{
 		for (size_t row = 0; row < pivot.row; row++) {
-			mRows[row] -= (mRows[row][pivot.col] / pivot.entry) * mRows[pivot.row];
+			mRows[row] -= mRows[pivot.row] * (mRows[row][pivot.col] / pivot.entry);
 		}
 	}
 
@@ -143,7 +145,7 @@ namespace linalg {
 		return true;
 	}
 
-	Matrixx Matrixx::Impl::block(const size_t beginRow, const size_t beginCol,
+	Matrixx::Impl Matrixx::Impl::block(const size_t beginRow, const size_t beginCol,
 		const size_t blockHeight, const size_t blockWidth) const
 	{
 		int exceptNum = ExceptionHandlerr::checkRowIndex(beginRow, mHeight);
@@ -167,16 +169,16 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Matrixx blockMatrix(static_cast<int>(blockHeight), static_cast<int>(blockWidth));
-		for (size_t row = 0; row < blockMatrix.height(); row++) {
-			for (size_t col = 0; col < blockMatrix.width(); col++) {
-				blockMatrix[row][col] = mRows[beginRow + row][beginCol + col];
+		Impl blockMatrixImpl(static_cast<int>(blockHeight), static_cast<int>(blockWidth));
+		for (size_t row = 0; row < blockMatrixImpl.height(); row++) {
+			for (size_t col = 0; col < blockMatrixImpl.width(); col++) {
+				blockMatrixImpl[row][col] = mRows[beginRow + row][beginCol + col];
 			}
 		}
-		return blockMatrix;
+		return blockMatrixImpl;
 	}
 
-	Matrixx Matrixx::Impl::inverse()
+	Matrixx::Impl Matrixx::Impl::inverse()
 	{
 		if (mHeight != mWidth) {
 			EtcArgument etcArg("Cannot get inverse matrix from non-square matrix.");
@@ -186,51 +188,104 @@ namespace linalg {
 		}
 
 		const int length = static_cast<int>(mHeight);
-		Matrixx identityMatrix = identity(length);
-		Matrixx appendedMatrix = matrix(*this) & identityMatrix;
-		appendedMatrix.reduce();
+		Impl identityMatrixImpl = identity(length);
+		Impl appendedMatrixImpl = *this & identityMatrixImpl;
+		appendedMatrixImpl.reduce();
 
-		if (appendedMatrix.block(0, 0, length, length) != identityMatrix) {
+		if (appendedMatrixImpl.block(0, 0, length, length) != identityMatrixImpl) {
 			EtcArgument etcArg("The matrix is not reversible.");
 			ExceptionHandlerr handler(ExceptionState::EtcException, static_cast<int>(EtcState::Exception));
 			handler.addArgument(etcArg);
 			handler.handleException();
 		}
 
-		return appendedMatrix.block(0, length, length, length);
+		return appendedMatrixImpl.block(0, length, length, length);
 	}
 
-	Matrixx Matrixx::Impl::transpose() const
+	Matrixx::Impl Matrixx::Impl::transpose() const
 	{
-		Matrixx transposedMatrix(static_cast<int>(mWidth), static_cast<int>(mHeight));
+		Impl transposedMatrixImpl(static_cast<int>(mWidth), static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
-				transposedMatrix[col][row] = mRows[row][col];
+				transposedMatrixImpl[col][row] = mRows[row][col];
 			}
 		}
-		return transposedMatrix;
+		return transposedMatrixImpl;
 	}
 
-	Matrixx Matrixx::Impl::identity(const int length)
+	Matrixx::Impl Matrixx::Impl::identity(const int length)
 	{
-		Matrixx identityMatrix(length, length);
-		for (size_t row = 0; row < identityMatrix.height(); row++) {
-			for (size_t col = 0; col < identityMatrix.width(); col++) {
-				identityMatrix[row][col] = (row == col) ? 1.0 : 0.0;
+		Impl identityMatrixImpl(length, length);
+		for (size_t row = 0; row < identityMatrixImpl.height(); row++) {
+			for (size_t col = 0; col < identityMatrixImpl.width(); col++) {
+				identityMatrixImpl[row][col] = (row == col) ? 1.0 : 0.0;
 			}
 		}
-		return identityMatrix;
+		return identityMatrixImpl;
 	}
 
-	Matrixx Matrixx::Impl::matrix(const Impl& matrixImpl)
+	const Roww& Matrixx::Impl::operator[](const size_t row) const
 	{
-		Matrixx matrix(static_cast<int>(matrixImpl.mHeight), static_cast<int>(matrixImpl.mWidth));
-		for (size_t row = 0; row < matrix.height(); row++) {
-			for (size_t col = 0; col < matrix.width(); col++) {
-				matrix[row][col] = matrixImpl.get(static_cast<int>(row), static_cast<int>(col));
-			}
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
 		}
-		return matrix;
+
+		return mRows[row];
+	}
+	Roww& Matrixx::Impl::operator[](const size_t row)
+	{
+		return const_cast<Roww&>(static_cast<const Impl&>(*this)[row]);
+	}
+
+	const Roww& Matrixx::Impl::operator()(const int row) const
+	{
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mRows[row];
+		}
+		else {
+			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)];
+		}
+	}
+	Roww& Matrixx::Impl::operator()(const int row)
+	{
+		return const_cast<Roww&>(static_cast<const Impl&>(*this)(row));
+	}
+
+	const double& Matrixx::Impl::operator()(const int row, const int col) const
+	{
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		exceptNum += ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight, true);
+			ColumnIndexArgument colIndexArg(col, mWidth, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mRows[row](col);
+		}
+		else {
+			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)](col);
+		}
+	}
+	double& Matrixx::Impl::operator()(const int row, const int col)
+	{
+		return const_cast<double&>(static_cast<const Impl&>(*this)(row, col));
 	}
 
 	void Matrixx::Impl::allocate(const size_t sequence, const double value)
@@ -248,18 +303,20 @@ namespace linalg {
 		}
 	}
 
-	Matrixx Matrixx::Impl::negative() const
+	Matrixx::Impl Matrixx::Impl::operator+() const
 	{
-		Matrixx negativeMatrix(static_cast<int>(mHeight), static_cast<int>(mWidth));
+		return Impl(*this);
+	}
+	Matrixx::Impl Matrixx::Impl::operator-() const
+	{
+		Impl negativeMatrixImpl(static_cast<int>(mHeight), static_cast<int>(mWidth));
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
-				negativeMatrix[row][col] = convertNegativeZero(-mRows[row][col]);
+				negativeMatrixImpl[row][col] = convertNegativeZero(-mRows[row][col]);
 			}
 		}
-		return negativeMatrix;
+		return negativeMatrixImpl;
 	}
-
-	
 
 	void Matrixx::Impl::swap(Impl& rightMatrixImpl) noexcept
 	{
@@ -268,167 +325,286 @@ namespace linalg {
 		std::swap(mWidth, rightMatrixImpl.mWidth);
 	}
 
-	void Matrixx::Impl::innerAdd(const Matrixx& rightMatrix)
+	Matrixx::Impl& Matrixx::Impl::operator+=(const Impl& rightMatrixImpl)
 	{
+		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightMatrixImpl.mHeight);
+		exceptNum += ExceptionHandlerr::checkWidth(mWidth, rightMatrixImpl.mWidth);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrixImpl.mHeight, rightMatrixImpl.mWidth);
+			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
 		Impl resultMatrixImpl(*this);
 		for (size_t row = 0; row < mHeight; row++) {
-			resultMatrixImpl.row(row) += rightMatrix[row];
+			resultMatrixImpl[row] += rightMatrixImpl[row];
 		}
 		swap(resultMatrixImpl);
+		return *this;
 	}
-	void Matrixx::Impl::innerSub(const Matrixx& rightMatrix)
+	Matrixx::Impl& Matrixx::Impl::operator-=(const Impl& rightMatrixImpl)
 	{
+		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightMatrixImpl.mHeight);
+		exceptNum += ExceptionHandlerr::checkWidth(mWidth, rightMatrixImpl.mWidth);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrixImpl.mHeight, rightMatrixImpl.mWidth);
+			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
 		Impl resultMatrixImpl(*this);
 		for (size_t row = 0; row < mHeight; row++) {
-			resultMatrixImpl.row(row) -= rightMatrix[row];
+			resultMatrixImpl[row] -= rightMatrixImpl[row];
 		}
 		swap(resultMatrixImpl);
+		return *this;
 	}
-	void Matrixx::Impl::innerMul(const double multiplier)
+	Matrixx::Impl& Matrixx::Impl::operator*=(const double multiplier)
 	{
 		for (size_t row = 0; row < mHeight; row++) {
 			mRows[row] *= multiplier;
 		}
+		return *this;
 	}
-	void Matrixx::Impl::innerMatMul(const Matrixx& rightMatrix)
+	Matrixx::Impl& Matrixx::Impl::operator*=(const Impl& rightMatrixImpl)
 	{
-		Impl resultMatrixImpl(static_cast<int>(mHeight), static_cast<int>(rightMatrix.width()));
+		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightMatrixImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrixImpl.mHeight, rightMatrixImpl.mWidth);
+			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Impl resultMatrixImpl(static_cast<int>(mHeight), static_cast<int>(rightMatrixImpl.mWidth));
 		for (size_t row = 0; row < mHeight; row++) {
-			for (size_t col = 0; col < rightMatrix.width(); col++) {
+			for (size_t col = 0; col < rightMatrixImpl.mWidth; col++) {
 				double dotProduct = 0.0;
 				for (size_t join = 0; join < mWidth; join++) {
-					dotProduct += mRows[row][join] * rightMatrix[join][col];
+					dotProduct += mRows[row][join] * rightMatrixImpl[join][col];
 				}
-				resultMatrixImpl.row(row)[col] = convertNegativeZero(dotProduct);
+				resultMatrixImpl[row][col] = convertNegativeZero(dotProduct);
 			}
 		}
 		swap(resultMatrixImpl);
+		return *this;
 	}
-	void Matrixx::Impl::innerDiv(const double divisor)
+	Matrixx::Impl& Matrixx::Impl::operator/=(const double divisor)
 	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
+				static_cast<int>(OperationState::DivideByZero));
+			handler.handleException();
+		}
+
 		Impl resultMatrixImpl(*this);
 		for (size_t row = 0; row < mHeight; row++) {
-			resultMatrixImpl.row(row) /= divisor;
+			resultMatrixImpl[row] /= divisor;
 		}
 		swap(resultMatrixImpl);
-	}
-	void Matrixx::Impl::innerHorizontalAppend(const Matrixx& rightMatrix)
-	{
-		Impl appendedMatrixImpl(static_cast<int>(mHeight), static_cast<int>(mWidth + rightMatrix.width()));
-		for (size_t row = 0; row < mHeight; row++) {
-			for (size_t col = 0; col < mWidth; col++) {
-				appendedMatrixImpl.row(row)[col] = mRows[row][col];
-			}
-		}
-		for (size_t row = 0; row < mHeight; row++) {
-			for (size_t col = mWidth; col < mWidth + rightMatrix.width(); col++) {
-				appendedMatrixImpl.row(row)[col] = rightMatrix[row][col - mWidth];
-			}
-		}
-		swap(appendedMatrixImpl);
-	}
-	void Matrixx::Impl::innerHorizontalAppend(const Vectorr& rightVector)
-	{
-		innerHorizontalAppend(Matrixx(rightVector));
-	}
-	void Matrixx::Impl::innerVerticalAppend(const Matrixx& lowerMatrix)
-	{
-		Impl appendedMatrixImpl(static_cast<int>(mHeight + lowerMatrix.height()), static_cast<int>(mWidth));
-		for (size_t row = 0; row < mHeight; row++) {
-			for (size_t col = 0; col < mWidth; col++) {
-				appendedMatrixImpl.row(row)[col] = mRows[row][col];
-			}
-		}
-		for (size_t row = mHeight; row < mHeight + lowerMatrix.height(); row++) {
-			for (size_t col = 0; col < mWidth; col++) {
-				appendedMatrixImpl.row(row)[col] = lowerMatrix[row - mHeight][col];
-			}
-		}
-		swap(appendedMatrixImpl);
-	}
-	void Matrixx::Impl::innerVerticalAppend(const Roww& lowerRow)
-	{
-		innerVerticalAppend(Matrixx(lowerRow));
+		return *this;
 	}
 
-	Vectorr Matrixx::Impl::vectorEquation(const Vectorr& rightVector)
+	Matrixx::Impl& Matrixx::Impl::operator&=(const Impl& rightMatrixImpl)
 	{
-		Vectorr resultVector(static_cast<int>(mHeight));
+		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightMatrixImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightMatrixImpl.mHeight, rightMatrixImpl.mWidth);
+			OperationArgument operationArg('&', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Impl appendedMatrixImpl(static_cast<int>(mHeight), static_cast<int>(mWidth + rightMatrixImpl.mWidth));
+		for (size_t row = 0; row < mHeight; row++) {
+			for (size_t col = 0; col < mWidth; col++) {
+				appendedMatrixImpl[row][col] = mRows[row][col];
+			}
+		}
+		for (size_t row = 0; row < mHeight; row++) {
+			for (size_t col = mWidth; col < mWidth + rightMatrixImpl.mWidth; col++) {
+				appendedMatrixImpl[row][col] = rightMatrixImpl[row][col - mWidth];
+			}
+		}
+		swap(appendedMatrixImpl);
+		return *this;
+	}
+	Matrixx::Impl& Matrixx::Impl::operator&=(const Vectorr::Impl& rightVectorImpl)
+	{
+		return (*this &= Impl(rightVectorImpl));
+	}
+	
+	Matrixx::Impl& Matrixx::Impl::operator|=(const Impl& lowerMatrixImpl)
+	{
+		int exceptNum = ExceptionHandlerr::checkWidth(mWidth, lowerMatrixImpl.mWidth);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument upperLengthArg(mHeight, mWidth);
+			LengthArgument lowerLengthArg(lowerMatrixImpl.mHeight, lowerMatrixImpl.mWidth);
+			OperationArgument operationArg('|', upperLengthArg, lowerLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Impl appendedMatrixImpl(static_cast<int>(mHeight + lowerMatrixImpl.mHeight), static_cast<int>(mWidth));
+		for (size_t row = 0; row < mHeight; row++) {
+			for (size_t col = 0; col < mWidth; col++) {
+				appendedMatrixImpl[row][col] = mRows[row][col];
+			}
+		}
+		for (size_t row = mHeight; row < mHeight + lowerMatrixImpl.mHeight; row++) {
+			for (size_t col = 0; col < mWidth; col++) {
+				appendedMatrixImpl[row][col] = lowerMatrixImpl[row - mHeight][col];
+			}
+		}
+		swap(appendedMatrixImpl);
+		return *this;
+	}
+	Matrixx::Impl& Matrixx::Impl::operator|=(const Roww::Impl& lowerRowImpl)
+	{
+		return (*this |= Impl(lowerRowImpl));
+	}
+
+	Vectorr::Impl Matrixx::Impl::operator*(const Vectorr::Impl& rightVectorImpl) const
+	{
+		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightVectorImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, mWidth);
+			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Vectorr::Impl resultVectorImpl(static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
 			double dotProduct = 0.0;
 			for (size_t join = 0; join < mWidth; join++) {
-				dotProduct += mRows[row][join] * rightVector[join];
+				dotProduct += mRows[row][join] * rightVectorImpl[join];
 			}
-			resultVector[row] = dotProduct;
+			resultVectorImpl[row] = dotProduct;
 		}
-		return resultVector;
+		return resultVectorImpl;
 	}
 
-	bool Matrixx::Impl::equals(const Matrixx& rightMatrix) const
+	Matrixx::Impl Matrixx::Impl::operator+(const Impl& rightMatrixImpl) const
 	{
-		if (mHeight != rightMatrix.height() ||
-			mWidth != rightMatrix.width()) {
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl += rightMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator-(const Impl& rightMatrixImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl -= rightMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator*(const double multiplier) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl *= multiplier;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator*(const Impl& rightMatrixImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl *= rightMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator/(const double divisor) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl /= divisor;
+		return resultMatrixImpl;
+	}
+
+	Matrixx::Impl Matrixx::Impl::operator&(const Impl& rightMatrixImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl &= rightMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator&(const Vectorr::Impl& rightVectorImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl &= rightVectorImpl;
+		return resultMatrixImpl;
+	}
+
+	Matrixx::Impl Matrixx::Impl::operator|(const Impl& lowerMatrixImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl |= lowerMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Matrixx::Impl::operator|(const Roww::Impl& lowerRowImpl) const
+	{
+		Impl resultMatrixImpl(*this);
+		resultMatrixImpl |= lowerRowImpl;
+		return resultMatrixImpl;
+	}
+
+	bool Matrixx::Impl::operator==(const Impl& rightMatrixImpl) const
+	{
+		if (mHeight != rightMatrixImpl.mHeight ||
+			mWidth != rightMatrixImpl.mWidth) {
 			return false;
 		}
 		for (size_t row = 0; row < mHeight; row++) {
-			if (mRows[row] != rightMatrix[row]) {
+			if (mRows[row] != rightMatrixImpl[row]) {
 				return false;
 			}
 		}
 		return true;
 	}
-
-	const Roww& Matrixx::Impl::row(const size_t row) const
+	bool Matrixx::Impl::operator!=(const Impl& rightMatrixImpl) const
 	{
-		return mRows[row];
-	}
-	Roww& Matrixx::Impl::row(const size_t row)
-	{
-		return const_cast<Roww&>(static_cast<const Impl&>(*this).row(row));
-	}
-	const Roww& Matrixx::Impl::row(const int row) const
-	{
-		if (row >= 0) {
-			return mRows[row];
-		}
-		else {
-			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)];
-		}
-	}
-	Roww& Matrixx::Impl::row(const int row)
-	{
-		return const_cast<Roww&>(static_cast<const Impl&>(*this).row(row));
-	}
-	const double& Matrixx::Impl::get(const int row, const int col) const
-	{
-		if (row >= 0) {
-			return mRows[row](col);
-		}
-		else {
-			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)](col);
-		}
-	}
-	double& Matrixx::Impl::get(const int row, const int col)
-	{
-		return const_cast<double&>(static_cast<const Impl&>(*this).get(row, col));
+		return !(*this == rightMatrixImpl);
 	}
 
-	const Roww Matrixx::Impl::getRow(const int row) const
+	const Roww::Impl Matrixx::Impl::getRow(const int row) const
 	{
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
 		if (row >= 0) {
-			return mRows[row];
+			return *(mRows[row].impl);
 		}
 		else {
-			return mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)];
+			return *(mRows[static_cast<size_t>(static_cast<int>(mHeight) + row)].impl);
 		}
 	}
-	const Vectorr Matrixx::Impl::getColumn(const int col) const
+	const Vectorr::Impl Matrixx::Impl::getColumn(const int col) const
 	{
-		Vectorr copyVector(static_cast<int>(mHeight));
+		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(col, mWidth, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		Vectorr::Impl copyVectorImpl(static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
-			copyVector[row] = mRows[row](col);
+			copyVectorImpl[row] = mRows[row](col);
 		}
-		return copyVector;
+		return copyVectorImpl;
 	}
 
 	const size_t Matrixx::Impl::height() const
@@ -438,6 +614,10 @@ namespace linalg {
 	const size_t Matrixx::Impl::width() const
 	{
 		return mWidth;
+	}
+	const size_t Matrixx::Impl::size() const
+	{
+		return mHeight * mWidth;
 	}
 
 	const std::string Matrixx::Impl::str() const
@@ -473,6 +653,44 @@ namespace linalg {
 		mEntries.resize(mWidth, 0.0);
 	}
 
+	const double& Roww::Impl::operator[](const size_t col) const
+	{
+		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			ColumnIndexArgument colIndexArg(col, mWidth);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
+		return mEntries[col];
+	}
+	double& Roww::Impl::operator[](const size_t col)
+	{
+		return const_cast<double&>(static_cast<const Impl&>(*this)[col]);
+	}
+	const double& Roww::Impl::operator()(const int col) const
+	{
+		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			ColumnIndexArgument colIndexArg(col, mWidth, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(colIndexArg);
+			handler.handleException();
+		}
+
+		if (col >= 0) {
+			return mEntries[col];
+		}
+		else {
+			return mEntries[static_cast<size_t>(static_cast<int>(mWidth) + col)];
+		}
+	}
+	double& Roww::Impl::operator()(const int col)
+	{
+		return const_cast<double&>(static_cast<const Impl&>(*this)(col));
+	}
+
 	void Roww::Impl::allocate(const size_t sequence, const double value)
 	{
 		if (sequence < mWidth) {
@@ -488,13 +706,17 @@ namespace linalg {
 		}
 	}
 
-	Roww Roww::Impl::negative() const
+	Roww::Impl Roww::Impl::operator+() const
 	{
-		Roww negativeRow(static_cast<int>(mWidth));
+		return Impl(*this);
+	}
+	Roww::Impl Roww::Impl::operator-() const
+	{
+		Impl negativeRowImpl(static_cast<int>(mWidth));
 		for (size_t col = 0; col < mWidth; col++) {
-			negativeRow[col] = convertNegativeZero(-mEntries[col]);
+			negativeRowImpl[col] = convertNegativeZero(-mEntries[col]);
 		}
-		return negativeRow;
+		return negativeRowImpl;
 	}
 
 	void Roww::Impl::swap(Impl& rightRowImpl) noexcept
@@ -503,84 +725,146 @@ namespace linalg {
 		std::swap(mWidth, rightRowImpl.mWidth);
 	}
 
-	void Roww::Impl::innerAdd(const Roww& rightRow)
+	Roww::Impl& Roww::Impl::operator+=(const Impl& rightRowImpl)
 	{
+		int exceptNum = ExceptionHandlerr::checkWidth(mWidth, rightRowImpl.mWidth);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(1, mWidth);
+			LengthArgument rightLengthArg(1, rightRowImpl.mWidth);
+			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
 		Impl resultRowImpl(static_cast<int>(mWidth));
 		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl.get(col) = convertNegativeZero(mEntries[col] + rightRow[col]);
+			resultRowImpl[col] = convertNegativeZero(mEntries[col] + rightRowImpl[col]);
 		}
 		swap(resultRowImpl);
+		return *this;
 	}
-	void Roww::Impl::innerSub(const Roww& rightRow)
+	Roww::Impl& Roww::Impl::operator-=(const Impl& rightRowImpl)
 	{
+		int exceptNum = ExceptionHandlerr::checkWidth(mWidth, rightRowImpl.mWidth);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(1, mWidth);
+			LengthArgument rightLengthArg(1, rightRowImpl.mWidth);
+			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
 		Impl resultRowImpl(static_cast<int>(mWidth));
 		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl.get(col) = convertNegativeZero(mEntries[col] - rightRow[col]);
+			resultRowImpl[col] = convertNegativeZero(mEntries[col] - rightRowImpl[col]);
 		}
 		swap(resultRowImpl);
+		return *this;
 	}
-	void Roww::Impl::innerMul(const double multiplier)
+	Roww::Impl& Roww::Impl::operator*=(const double multiplier)
 	{
 		for (size_t col = 0; col < mWidth; col++) {
 			mEntries[col] = convertNegativeZero(multiplier * mEntries[col]);
 		}
+		return *this;
 	}
-	void Roww::Impl::innerDiv(const double divisor)
+	Roww::Impl& Roww::Impl::operator/=(const double divisor)
 	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
+				static_cast<int>(OperationState::DivideByZero));
+			handler.handleException();
+		}
+
 		Impl resultRowImpl(static_cast<int>(mWidth));
 		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl.get(col) = convertNegativeZero(mEntries[col] / divisor);
+			resultRowImpl[col] = convertNegativeZero(mEntries[col] / divisor);
 		}
 		swap(resultRowImpl);
+		return *this;
 	}
-	void Roww::Impl::innerHorizontalAppend(const Roww& rightRow)
+	Roww::Impl& Roww::Impl::operator&=(const Impl& rightRowImpl)
 	{
-		Impl appendedRowImpl(static_cast<int>(mWidth + rightRow.width()));
+		Impl appendedRowImpl(static_cast<int>(mWidth + rightRowImpl.mWidth));
 		for (size_t col = 0; col < mWidth; col++) {
-			appendedRowImpl.get(col) = mEntries[col];
+			appendedRowImpl[col] = mEntries[col];
 		}
-		for (size_t col = mWidth; col < mWidth + rightRow.width(); col++) {
-			appendedRowImpl.get(col) = rightRow[col - mWidth];
+		for (size_t col = mWidth; col < mWidth + rightRowImpl.mWidth; col++) {
+			appendedRowImpl[col] = rightRowImpl[col - mWidth];
 		}
 		swap(appendedRowImpl);
+		return *this;
 	}
 
-	bool Roww::Impl::equals(const Roww& rightRow) const
+	Roww::Impl Roww::Impl::operator+(const Impl& rightRowImpl) const
 	{
-		if (mWidth != rightRow.width()) {
+		Impl resultRowImpl(*this);
+		resultRowImpl += rightRowImpl;
+		return resultRowImpl;
+	}
+	Roww::Impl Roww::Impl::operator-(const Impl& rightRowImpl) const
+	{
+		Impl resultRowImpl(*this);
+		resultRowImpl -= rightRowImpl;
+		return resultRowImpl;
+	}
+	Roww::Impl Roww::Impl::operator*(const double multiplier) const
+	{
+		Impl resultRowImpl(*this);
+		resultRowImpl *= multiplier;
+		return resultRowImpl;
+	}
+	Roww::Impl Roww::Impl::operator/(const double divisor) const
+	{
+		Impl resultRowImpl(*this);
+		resultRowImpl /= divisor;
+		return resultRowImpl;
+	}
+
+	Roww::Impl Roww::Impl::operator&(const Impl& rightRowImpl) const
+	{
+		Impl resultRowImpl(*this);
+		resultRowImpl &= rightRowImpl;
+		return resultRowImpl;
+	}
+
+	Matrixx::Impl Roww::Impl::operator|(const Matrixx::Impl& lowerMatrixImpl) const
+	{
+		Matrixx::Impl resultMatrixImpl(*this);
+		resultMatrixImpl |= lowerMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Roww::Impl::operator|(const Roww::Impl& lowerRowImpl) const
+	{
+		Matrixx::Impl resultMatrixImpl(*this);
+		resultMatrixImpl |= lowerRowImpl;
+		return resultMatrixImpl;
+	}
+
+	bool Roww::Impl::operator==(const Impl& rightRowImpl) const
+	{
+		if (mWidth != rightRowImpl.mWidth) {
 			return false;
 		}
 		for (size_t col = 0; col < mWidth; col++) {
-			if (mEntries[col] != rightRow[col]) {
+			if (mEntries[col] != rightRowImpl[col]) {
 				return false;
 			}
 		}
 		return true;
 	}
-
-	const double& Roww::Impl::get(const size_t col) const
+	bool Roww::Impl::operator!=(const Impl& rightRowImpl) const
 	{
-		return mEntries[col];
-	}
-	double& Roww::Impl::get(const size_t col)
-	{
-		return const_cast<double&>(static_cast<const Impl&>(*this).get(col));
-	}
-	const double& Roww::Impl::get(const int col) const
-	{
-		if (col >= 0) {
-			return mEntries[col];
-		}
-		else {
-			return mEntries[static_cast<size_t>(static_cast<int>(mWidth) + col)];
-		}
-	}
-	double& Roww::Impl::get(const int col)
-	{
-		return const_cast<double&>(static_cast<const Impl&>(*this).get(col));
+		return !(*this == rightRowImpl);
 	}
 
 	const size_t Roww::Impl::width() const
+	{
+		return mWidth;
+	}
+	const size_t Roww::Impl::size() const
 	{
 		return mWidth;
 	}
@@ -626,6 +910,44 @@ namespace linalg {
 		mEntries.resize(mHeight, 0.0);
 	}
 
+	const double& Vectorr::Impl::operator[](const size_t row) const
+	{
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		return mEntries[row];
+	}
+	double& Vectorr::Impl::operator[](const size_t row)
+	{
+		return const_cast<double&>(static_cast<const Impl&>(*this)[row]);
+	}
+	const double& Vectorr::Impl::operator()(const int row) const
+	{
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
+			RowIndexArgument rowIndexArg(row, mHeight, true);
+			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
+			handler.addArgument(rowIndexArg);
+			handler.handleException();
+		}
+
+		if (row >= 0) {
+			return mEntries[row];
+		}
+		else {
+			return mEntries[static_cast<size_t>(static_cast<int>(mHeight) + row)];
+		}
+	}
+	double& Vectorr::Impl::operator()(const int row)
+	{
+		return const_cast<double&>(static_cast<const Impl&>(*this)(row));
+	}
+
 	void Vectorr::Impl::allocate(const size_t sequence, const double value)
 	{
 		if (sequence < mHeight) {
@@ -641,13 +963,17 @@ namespace linalg {
 		}
 	}
 
-	Vectorr Vectorr::Impl::negative() const
+	Vectorr::Impl Vectorr::Impl::operator+() const
 	{
-		Vectorr negativeVector(static_cast<int>(mHeight));
+		return Impl(*this);
+	}
+	Vectorr::Impl Vectorr::Impl::operator-() const
+	{
+		Impl negativeVectorImpl(static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
-			negativeVector[row] = convertNegativeZero(-mEntries[row]);
+			negativeVectorImpl[row] = convertNegativeZero(-mEntries[row]);
 		}
-		return negativeVector;
+		return negativeVectorImpl;
 	}
 
 	void Vectorr::Impl::swap(Impl& rightVectorImpl) noexcept
@@ -656,85 +982,147 @@ namespace linalg {
 		std::swap(mHeight, rightVectorImpl.mHeight);
 	}
 
-	void Vectorr::Impl::innerAdd(const Vectorr& rightVector)
+	Vectorr::Impl& Vectorr::Impl::operator+=(const Vectorr::Impl& rightVectorImpl)
 	{
-		Impl resultVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl.get(row) = convertNegativeZero(mEntries[row] + rightVector[row]);
+		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightVectorImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, 1);
+			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
 		}
-		swap(resultVectorImpl);
-	}
 
-	void Vectorr::Impl::innerSub(const Vectorr& rightVector)
-	{
 		Impl resultVectorImpl(static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl.get(row) = convertNegativeZero(mEntries[row] - rightVector[row]);
+			resultVectorImpl[row] = convertNegativeZero(mEntries[row] + rightVectorImpl[row]);
 		}
 		swap(resultVectorImpl);
+		return *this;
 	}
-	void Vectorr::Impl::innerMul(const double multiplier)
+	Vectorr::Impl& Vectorr::Impl::operator-=(const Vectorr::Impl& rightVectorImpl)\
+	{
+		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightVectorImpl.mHeight);
+		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
+			LengthArgument leftLengthArg(mHeight, 1);
+			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
+			handler.addArgument(operationArg);
+			handler.handleException();
+		}
+
+		Impl resultVectorImpl(static_cast<int>(mHeight));
+		for (size_t row = 0; row < mHeight; row++) {
+			resultVectorImpl[row] = convertNegativeZero(mEntries[row] - rightVectorImpl[row]);
+		}
+		swap(resultVectorImpl);
+		return *this;
+	}
+	Vectorr::Impl& Vectorr::Impl::operator*=(const double multiplier)
 	{
 		for (size_t row = 0; row < mHeight; row++) {
 			mEntries[row] = convertNegativeZero(multiplier * mEntries[row]);
 		}
+		return *this;
 	}
-	void Vectorr::Impl::innerDiv(const double divisor)
+	Vectorr::Impl& Vectorr::Impl::operator/=(const double divisor)
 	{
+		if (convertNegativeZero(divisor) == 0.0) {
+			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
+				static_cast<int>(OperationState::DivideByZero));
+			handler.handleException();
+		}
+
 		Impl resultVectorImpl(static_cast<int>(mHeight));
 		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl.get(row) = convertNegativeZero(mEntries[row] / divisor);
+			resultVectorImpl[row] = convertNegativeZero(mEntries[row] / divisor);
 		}
 		swap(resultVectorImpl);
-	}
-	void Vectorr::Impl::innerVerticalAppend(const Vectorr& lowerVector)
-	{
-		Impl appendedVectorImpl(static_cast<int>(mHeight + lowerVector.height()));
-		for (size_t row = 0; row < mHeight; row++) {
-			appendedVectorImpl.get(row) = mEntries[row];
-		}
-		for (size_t row = mHeight; row < mHeight + lowerVector.height(); row++) {
-			appendedVectorImpl.get(row) = lowerVector[row - mHeight];
-		}
-		swap(appendedVectorImpl);
+		return *this;
 	}
 
-	bool Vectorr::Impl::equals(const Vectorr& rightVector) const
+	Vectorr::Impl& Vectorr::Impl::operator|=(const Vectorr::Impl& lowerVectorImpl)
 	{
-		if (mHeight != rightVector.height()) {
+		Impl appendedVectorImpl(static_cast<int>(mHeight + lowerVectorImpl.mHeight));
+		for (size_t row = 0; row < mHeight; row++) {
+			appendedVectorImpl[row] = mEntries[row];
+		}
+		for (size_t row = mHeight; row < mHeight + lowerVectorImpl.mHeight; row++) {
+			appendedVectorImpl[row] = lowerVectorImpl[row - mHeight];
+		}
+		swap(appendedVectorImpl);
+		return *this;
+	}
+
+	Vectorr::Impl Vectorr::Impl::operator+(const Vectorr::Impl& rightVectorImpl) const
+	{
+		Impl resultVectorImpl(*this);
+		resultVectorImpl += rightVectorImpl;
+		return resultVectorImpl;
+	}
+	Vectorr::Impl Vectorr::Impl::operator-(const Vectorr::Impl& rightVectorImpl) const
+	{
+		Impl resultVectorImpl(*this);
+		resultVectorImpl -= rightVectorImpl;
+		return resultVectorImpl;
+	}
+	Vectorr::Impl Vectorr::Impl::operator*(const double multiplier) const
+	{
+		Impl resultVectorImpl(*this);
+		resultVectorImpl *= multiplier;
+		return resultVectorImpl;
+	}
+	Vectorr::Impl Vectorr::Impl::operator/(const double divisor) const
+	{
+		Impl resultVectorImpl(*this);
+		resultVectorImpl /= divisor;
+		return resultVectorImpl;
+	}
+
+	Matrixx::Impl Vectorr::Impl::operator&(const Matrixx::Impl& rightMatrixImpl) const
+	{
+		Matrixx::Impl resultMatrixImpl(*this);
+		resultMatrixImpl &= rightMatrixImpl;
+		return resultMatrixImpl;
+	}
+	Matrixx::Impl Vectorr::Impl::operator&(const Impl& rightVectorImpl) const
+	{
+		Matrixx::Impl resultMatrixImpl(*this);
+		resultMatrixImpl &= rightVectorImpl;
+		return resultMatrixImpl;
+	}
+
+	Vectorr::Impl Vectorr::Impl::operator|(const Vectorr::Impl& lowerVectorImpl) const
+	{
+		Impl resultVectorImpl(*this);
+		resultVectorImpl |= lowerVectorImpl;
+		return resultVectorImpl;
+	}
+
+	bool Vectorr::Impl::operator==(const Vectorr::Impl& rightVectorImpl) const
+	{
+		if (mHeight != rightVectorImpl.mHeight) {
 			return false;
 		}
 		for (size_t row = 0; row < mHeight; row++) {
-			if (mEntries[row] != rightVector[row]) {
+			if (mEntries[row] != rightVectorImpl[row]) {
 				return false;
 			}
 		}
 		return true;
 	}
-
-	const double& Vectorr::Impl::get(const size_t row) const
+	bool Vectorr::Impl::operator!=(const Vectorr::Impl& rightVectorImpl) const
 	{
-		return mEntries[row];
-	}
-	double& Vectorr::Impl::get(const size_t row)
-	{
-		return const_cast<double&>(static_cast<const Impl&>(*this).get(row));
-	}
-	const double& Vectorr::Impl::get(const int row) const
-	{
-		if (row >= 0) {
-			return mEntries[row];
-		}
-		else {
-			return mEntries[static_cast<size_t>(static_cast<int>(mHeight) + row)];
-		}
-	}
-	double& Vectorr::Impl::get(const int row)
-	{
-		return const_cast<double&>(static_cast<const Impl&>(*this).get(row));
+		return !(*this == rightVectorImpl);
 	}
 
 	const size_t Vectorr::Impl::height() const
+	{
+		return mHeight;
+	}
+	const size_t Vectorr::Impl::size() const
 	{
 		return mHeight;
 	}
@@ -754,4 +1142,5 @@ namespace linalg {
 		}
 		return vectorString;
 	}
+	
 }
