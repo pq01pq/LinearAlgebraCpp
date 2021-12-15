@@ -2,30 +2,49 @@
 
 namespace linalg {
 
-	const double Tensorr::Impl::convertNegativeZero(const double value)
+	Tensorr::Impl::Impl(const int size)
+		: mSize(size)
 	{
-		return (value == -0.0) ? 0.0 : value;
 	}
 
-	Matrixx::Impl::Impl(const int height, const int width)
+	const size_t Tensorr::Impl::size() const
+	{
+		return mSize;
+	}
+	void Tensorr::Impl::size(size_t size)
+	{
+		mSize = size;
+	}
+
+	const double Tensorr::Impl::epsilonTest(const double value)
+	{
+		constexpr double epsilon = std::numeric_limits<double>::epsilon();
+		return (value < epsilon && value > -epsilon) ? 0.0 : value;
+	}
+
+
+
+
+
+	Matrixx::Impl::Impl(const size_t height, const size_t width)
 	{
 		init(height, width);
 	}
 	Matrixx::Impl::Impl(const Roww::Impl& copyRowImpl)
-		: Impl(1, static_cast<int>(copyRowImpl.width()))
+		: Impl(1, copyRowImpl.mSize)
 	{
 		for (size_t col = 0; col < mHeight; col++) {
 			mRows[0][col] = copyRowImpl[col];
 		}
 	}
 	Matrixx::Impl::Impl(const Vectorr::Impl& copyVectorImpl)
-		: Impl(static_cast<int>(copyVectorImpl.height()), 1)
+		: Impl(copyVectorImpl.mSize, 1)
 	{
 		for (size_t row = 0; row < mHeight; row++) {
 			mRows[row][0] = copyVectorImpl[row];
 		}
 	}
-	void Matrixx::Impl::init(const int height, const int width)
+	void Matrixx::Impl::init(const size_t height, const size_t width)
 	{
 		int exceptNum = ExceptionHandlerr::checkValidHeight(height);
 		exceptNum += ExceptionHandlerr::checkValidWidth(width);
@@ -35,6 +54,8 @@ namespace linalg {
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
+
+		Tensorr::Impl::size(static_cast<size_t>(height * width));
 
 		mHeight = height;
 		mWidth = width;
@@ -104,7 +125,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		for (int row = static_cast<int>(mHeight) - 1; row >= 0; row--) {
+		for (int row = static_cast<int>(mHeight - 1); row >= 0; row--) {
 			Pivot pivot = getPivot(row);
 			if (pivot.col >= mWidth) {
 				// When trying to find pivot in zero rows
@@ -169,7 +190,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Impl blockMatrixImpl(static_cast<int>(blockHeight), static_cast<int>(blockWidth));
+		Impl blockMatrixImpl(blockHeight, blockWidth);
 		for (size_t row = 0; row < blockMatrixImpl.height(); row++) {
 			for (size_t col = 0; col < blockMatrixImpl.width(); col++) {
 				blockMatrixImpl[row][col] = mRows[beginRow + row][beginCol + col];
@@ -187,7 +208,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		const int length = static_cast<int>(mHeight);
+		const size_t length = mHeight;
 		Impl identityMatrixImpl = identity(length);
 		Impl appendedMatrixImpl = *this & identityMatrixImpl;
 		appendedMatrixImpl.reduce();
@@ -204,7 +225,7 @@ namespace linalg {
 
 	Matrixx::Impl Matrixx::Impl::transpose() const
 	{
-		Impl transposedMatrixImpl(static_cast<int>(mWidth), static_cast<int>(mHeight));
+		Impl transposedMatrixImpl(mWidth, mHeight);
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
 				transposedMatrixImpl[col][row] = mRows[row][col];
@@ -213,7 +234,7 @@ namespace linalg {
 		return transposedMatrixImpl;
 	}
 
-	Matrixx::Impl Matrixx::Impl::identity(const int length)
+	Matrixx::Impl Matrixx::Impl::identity(const size_t length)
 	{
 		Impl identityMatrixImpl(length, length);
 		for (size_t row = 0; row < identityMatrixImpl.height(); row++) {
@@ -291,7 +312,7 @@ namespace linalg {
 	void Matrixx::Impl::allocate(const size_t sequence, const double value)
 	{
 		if (sequence < mHeight * mWidth) {
-			mRows[sequence / mWidth][sequence % mWidth] = convertNegativeZero(value);
+			mRows[sequence / mWidth][sequence % mWidth] = epsilonTest(value);
 		}
 	}
 	void Matrixx::Impl::allocate(const std::initializer_list<double> values)
@@ -309,10 +330,10 @@ namespace linalg {
 	}
 	Matrixx::Impl Matrixx::Impl::operator-() const
 	{
-		Impl negativeMatrixImpl(static_cast<int>(mHeight), static_cast<int>(mWidth));
+		Impl negativeMatrixImpl(mHeight, mWidth);
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
-				negativeMatrixImpl[row][col] = convertNegativeZero(-mRows[row][col]);
+				negativeMatrixImpl[row][col] = epsilonTest(-mRows[row][col]);
 			}
 		}
 		return negativeMatrixImpl;
@@ -321,6 +342,9 @@ namespace linalg {
 	void Matrixx::Impl::swap(Impl& rightMatrixImpl) noexcept
 	{
 		std::swap(mRows, rightMatrixImpl.mRows);
+
+		std::swap(mSize, rightMatrixImpl.mSize);
+
 		std::swap(mHeight, rightMatrixImpl.mHeight);
 		std::swap(mWidth, rightMatrixImpl.mWidth);
 	}
@@ -384,14 +408,14 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Impl resultMatrixImpl(static_cast<int>(mHeight), static_cast<int>(rightMatrixImpl.mWidth));
+		Impl resultMatrixImpl(mHeight, rightMatrixImpl.mWidth);
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < rightMatrixImpl.mWidth; col++) {
 				double dotProduct = 0.0;
 				for (size_t join = 0; join < mWidth; join++) {
 					dotProduct += mRows[row][join] * rightMatrixImpl[join][col];
 				}
-				resultMatrixImpl[row][col] = convertNegativeZero(dotProduct);
+				resultMatrixImpl[row][col] = epsilonTest(dotProduct);
 			}
 		}
 		swap(resultMatrixImpl);
@@ -399,7 +423,7 @@ namespace linalg {
 	}
 	Matrixx::Impl& Matrixx::Impl::operator/=(const double divisor)
 	{
-		if (convertNegativeZero(divisor) == 0.0) {
+		if (epsilonTest(divisor) == 0.0) {
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
 				static_cast<int>(OperationState::DivideByZero));
 			handler.handleException();
@@ -425,7 +449,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Impl appendedMatrixImpl(static_cast<int>(mHeight), static_cast<int>(mWidth + rightMatrixImpl.mWidth));
+		Impl appendedMatrixImpl(mHeight, mWidth + rightMatrixImpl.mWidth);
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
 				appendedMatrixImpl[row][col] = mRows[row][col];
@@ -456,7 +480,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Impl appendedMatrixImpl(static_cast<int>(mHeight + lowerMatrixImpl.mHeight), static_cast<int>(mWidth));
+		Impl appendedMatrixImpl(mHeight + lowerMatrixImpl.mHeight, mWidth);
 		for (size_t row = 0; row < mHeight; row++) {
 			for (size_t col = 0; col < mWidth; col++) {
 				appendedMatrixImpl[row][col] = mRows[row][col];
@@ -508,10 +532,10 @@ namespace linalg {
 
 	Vectorr::Impl Matrixx::Impl::operator*(const Vectorr::Impl& rightVectorImpl) const
 	{
-		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightVectorImpl.mHeight);
+		int exceptNum = ExceptionHandlerr::checkJoinLength(mWidth, rightVectorImpl.mSize);
 		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
 			LengthArgument leftLengthArg(mHeight, mWidth);
-			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			LengthArgument rightLengthArg(rightVectorImpl.mSize, 1);
 			OperationArgument operationArg('*', leftLengthArg, rightLengthArg);
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
@@ -600,7 +624,7 @@ namespace linalg {
 			handler.handleException();
 		}
 
-		Vectorr::Impl copyVectorImpl(static_cast<int>(mHeight));
+		Vectorr::Impl copyVectorImpl(mHeight);
 		for (size_t row = 0; row < mHeight; row++) {
 			copyVectorImpl[row] = mRows[row](col);
 		}
@@ -614,10 +638,6 @@ namespace linalg {
 	const size_t Matrixx::Impl::width() const
 	{
 		return mWidth;
-	}
-	const size_t Matrixx::Impl::size() const
-	{
-		return mHeight * mWidth;
 	}
 
 	const std::string Matrixx::Impl::str() const
@@ -633,11 +653,11 @@ namespace linalg {
 
 
 
-	Roww::Impl::Impl(const int size)
+	Roww::Impl::Impl(const size_t size)
 	{
 		init(size);
 	}
-	void Roww::Impl::init(const int size)
+	void Roww::Impl::init(const size_t size)
 	{
 		int exceptNum = ExceptionHandlerr::checkValidWidth(size);
 		if (exceptNum > static_cast<int>(LengthState::NoExcept)) {
@@ -646,18 +666,18 @@ namespace linalg {
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
-
-		mWidth = size;
+		
+		Tensorr::Impl::size(size);
 
 		mEntries.clear();
-		mEntries.resize(mWidth, 0.0);
+		mEntries.resize(mSize, 0.0);
 	}
 
 	const double& Roww::Impl::operator[](const size_t col) const
 	{
-		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mSize);
 		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
-			ColumnIndexArgument colIndexArg(col, mWidth);
+			ColumnIndexArgument colIndexArg(col, mSize);
 			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
@@ -672,9 +692,9 @@ namespace linalg {
 
 	const double& Roww::Impl::operator()(const int col) const
 	{
-		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mWidth);
+		int exceptNum = ExceptionHandlerr::checkColumnIndex(col, mSize);
 		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
-			ColumnIndexArgument colIndexArg(col, mWidth, true);
+			ColumnIndexArgument colIndexArg(col, mSize, true);
 			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(colIndexArg);
 			handler.handleException();
@@ -684,7 +704,7 @@ namespace linalg {
 			return mEntries[col];
 		}
 		else {
-			return mEntries[static_cast<size_t>(static_cast<int>(mWidth) + col)];
+			return mEntries[static_cast<size_t>(static_cast<int>(mSize) + col)];
 		}
 	}
 	double& Roww::Impl::operator()(const int col)
@@ -694,8 +714,8 @@ namespace linalg {
 
 	void Roww::Impl::allocate(const size_t sequence, const double value)
 	{
-		if (sequence < mWidth) {
-			mEntries[sequence] = convertNegativeZero(value);
+		if (sequence < mSize) {
+			mEntries[sequence] = epsilonTest(value);
 		}
 	}
 	void Roww::Impl::allocate(const std::initializer_list<double> values)
@@ -713,9 +733,9 @@ namespace linalg {
 	}
 	Roww::Impl Roww::Impl::operator-() const
 	{
-		Impl negativeRowImpl(static_cast<int>(mWidth));
-		for (size_t col = 0; col < mWidth; col++) {
-			negativeRowImpl[col] = convertNegativeZero(-mEntries[col]);
+		Impl negativeRowImpl(mSize);
+		for (size_t col = 0; col < mSize; col++) {
+			negativeRowImpl[col] = epsilonTest(-mEntries[col]);
 		}
 		return negativeRowImpl;
 	}
@@ -723,65 +743,66 @@ namespace linalg {
 	void Roww::Impl::swap(Impl& rightRowImpl) noexcept
 	{
 		std::swap(mEntries, rightRowImpl.mEntries);
-		std::swap(mWidth, rightRowImpl.mWidth);
+
+		std::swap(mSize, rightRowImpl.mSize);
 	}
 
 	Roww::Impl& Roww::Impl::operator+=(const Impl& rightRowImpl)
 	{
-		int exceptNum = ExceptionHandlerr::checkWidth(mWidth, rightRowImpl.mWidth);
+		int exceptNum = ExceptionHandlerr::checkWidth(mSize, rightRowImpl.mSize);
 		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
-			LengthArgument leftLengthArg(1, mWidth);
-			LengthArgument rightLengthArg(1, rightRowImpl.mWidth);
+			LengthArgument leftLengthArg(1, mSize);
+			LengthArgument rightLengthArg(1, rightRowImpl.mSize);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 
-		Impl resultRowImpl(static_cast<int>(mWidth));
-		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl[col] = convertNegativeZero(mEntries[col] + rightRowImpl[col]);
+		Impl resultRowImpl(mSize);
+		for (size_t col = 0; col < mSize; col++) {
+			resultRowImpl[col] = epsilonTest(mEntries[col] + rightRowImpl[col]);
 		}
 		swap(resultRowImpl);
 		return *this;
 	}
 	Roww::Impl& Roww::Impl::operator-=(const Impl& rightRowImpl)
 	{
-		int exceptNum = ExceptionHandlerr::checkWidth(mWidth, rightRowImpl.mWidth);
+		int exceptNum = ExceptionHandlerr::checkWidth(mSize, rightRowImpl.mSize);
 		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
-			LengthArgument leftLengthArg(1, mWidth);
-			LengthArgument rightLengthArg(1, rightRowImpl.mWidth);
+			LengthArgument leftLengthArg(1, mSize);
+			LengthArgument rightLengthArg(1, rightRowImpl.mSize);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 
-		Impl resultRowImpl(static_cast<int>(mWidth));
-		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl[col] = convertNegativeZero(mEntries[col] - rightRowImpl[col]);
+		Impl resultRowImpl(mSize);
+		for (size_t col = 0; col < mSize; col++) {
+			resultRowImpl[col] = epsilonTest(mEntries[col] - rightRowImpl[col]);
 		}
 		swap(resultRowImpl);
 		return *this;
 	}
 	Roww::Impl& Roww::Impl::operator*=(const double multiplier)
 	{
-		for (size_t col = 0; col < mWidth; col++) {
-			mEntries[col] = convertNegativeZero(multiplier * mEntries[col]);
+		for (size_t col = 0; col < mSize; col++) {
+			mEntries[col] = epsilonTest(multiplier * mEntries[col]);
 		}
 		return *this;
 	}
 	Roww::Impl& Roww::Impl::operator/=(const double divisor)
 	{
-		if (convertNegativeZero(divisor) == 0.0) {
+		if (epsilonTest(divisor) == 0.0) {
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
 				static_cast<int>(OperationState::DivideByZero));
 			handler.handleException();
 		}
 
-		Impl resultRowImpl(static_cast<int>(mWidth));
-		for (size_t col = 0; col < mWidth; col++) {
-			resultRowImpl[col] = convertNegativeZero(mEntries[col] / divisor);
+		Impl resultRowImpl(mSize);
+		for (size_t col = 0; col < mSize; col++) {
+			resultRowImpl[col] = epsilonTest(mEntries[col] / divisor);
 		}
 		swap(resultRowImpl);
 		return *this;
@@ -789,12 +810,12 @@ namespace linalg {
 
 	Roww::Impl& Roww::Impl::operator&=(const Impl& rightRowImpl)
 	{
-		Impl appendedRowImpl(static_cast<int>(mWidth + rightRowImpl.mWidth));
-		for (size_t col = 0; col < mWidth; col++) {
+		Impl appendedRowImpl(mSize + rightRowImpl.mSize);
+		for (size_t col = 0; col < mSize; col++) {
 			appendedRowImpl[col] = mEntries[col];
 		}
-		for (size_t col = mWidth; col < mWidth + rightRowImpl.mWidth; col++) {
-			appendedRowImpl[col] = rightRowImpl[col - mWidth];
+		for (size_t col = mSize; col < mSize + rightRowImpl.mSize; col++) {
+			appendedRowImpl[col] = rightRowImpl[col - mSize];
 		}
 		swap(appendedRowImpl);
 		return *this;
@@ -847,10 +868,10 @@ namespace linalg {
 
 	bool Roww::Impl::operator==(const Impl& rightRowImpl) const
 	{
-		if (mWidth != rightRowImpl.mWidth) {
+		if (mSize != rightRowImpl.mSize) {
 			return false;
 		}
-		for (size_t col = 0; col < mWidth; col++) {
+		for (size_t col = 0; col < mSize; col++) {
 			if (mEntries[col] != rightRowImpl[col]) {
 				return false;
 			}
@@ -862,21 +883,12 @@ namespace linalg {
 		return !(*this == rightRowImpl);
 	}
 
-	const size_t Roww::Impl::width() const
-	{
-		return mWidth;
-	}
-	const size_t Roww::Impl::size() const
-	{
-		return mWidth;
-	}
-
 	const std::string Roww::Impl::str() const
 	{
 		std::ostringstream parser;
 		parser.precision(2);
 		std::string rowString = "[\t";
-		for (size_t col = 0; col < mWidth; col++) {
+		for (size_t col = 0; col < mSize; col++) {
 			if (mEntries[col] >= 0.0) {
 				parser << " ";
 			}
@@ -892,11 +904,11 @@ namespace linalg {
 
 
 
-	Vectorr::Impl::Impl(const int size)
+	Vectorr::Impl::Impl(const size_t size)
 	{
 		init(size);
 	}
-	void Vectorr::Impl::init(const int size)
+	void Vectorr::Impl::init(const size_t size)
 	{
 		int exceptNum = ExceptionHandlerr::checkValidHeight(size);
 		if (exceptNum > static_cast<int>(LengthState::NoExcept)) {
@@ -905,18 +917,18 @@ namespace linalg {
 			handler.addArgument(lengthArg);
 			handler.handleException();
 		}
-
-		mHeight = size;
+		
+		Tensorr::Impl::size(size);
 
 		mEntries.clear();
-		mEntries.resize(mHeight, 0.0);
+		mEntries.resize(mSize, 0.0);
 	}
 
 	const double& Vectorr::Impl::operator[](const size_t row) const
 	{
-		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mSize);
 		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
-			RowIndexArgument rowIndexArg(row, mHeight);
+			RowIndexArgument rowIndexArg(row, mSize);
 			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
@@ -931,9 +943,9 @@ namespace linalg {
 
 	const double& Vectorr::Impl::operator()(const int row) const
 	{
-		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mHeight);
+		int exceptNum = ExceptionHandlerr::checkRowIndex(row, mSize);
 		if (exceptNum > static_cast<int>(IndexState::NoExcept)) {
-			RowIndexArgument rowIndexArg(row, mHeight, true);
+			RowIndexArgument rowIndexArg(row, mSize, true);
 			ExceptionHandlerr handler(ExceptionState::OutOfRange, exceptNum);
 			handler.addArgument(rowIndexArg);
 			handler.handleException();
@@ -943,7 +955,7 @@ namespace linalg {
 			return mEntries[row];
 		}
 		else {
-			return mEntries[static_cast<size_t>(static_cast<int>(mHeight) + row)];
+			return mEntries[static_cast<size_t>(static_cast<int>(mSize) + row)];
 		}
 	}
 	double& Vectorr::Impl::operator()(const int row)
@@ -953,8 +965,8 @@ namespace linalg {
 
 	void Vectorr::Impl::allocate(const size_t sequence, const double value)
 	{
-		if (sequence < mHeight) {
-			mEntries[sequence] = convertNegativeZero(value);
+		if (sequence < mSize) {
+			mEntries[sequence] = epsilonTest(value);
 		}
 	}
 	void Vectorr::Impl::allocate(const std::initializer_list<double> values)
@@ -972,9 +984,9 @@ namespace linalg {
 	}
 	Vectorr::Impl Vectorr::Impl::operator-() const
 	{
-		Impl negativeVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			negativeVectorImpl[row] = convertNegativeZero(-mEntries[row]);
+		Impl negativeVectorImpl(mSize);
+		for (size_t row = 0; row < mSize; row++) {
+			negativeVectorImpl[row] = epsilonTest(-mEntries[row]);
 		}
 		return negativeVectorImpl;
 	}
@@ -982,65 +994,66 @@ namespace linalg {
 	void Vectorr::Impl::swap(Impl& rightVectorImpl) noexcept
 	{
 		std::swap(mEntries, rightVectorImpl.mEntries);
-		std::swap(mHeight, rightVectorImpl.mHeight);
+
+		std::swap(mSize, rightVectorImpl.mSize);
 	}
 
 	Vectorr::Impl& Vectorr::Impl::operator+=(const Vectorr::Impl& rightVectorImpl)
 	{
-		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightVectorImpl.mHeight);
+		int exceptNum = ExceptionHandlerr::checkHeight(mSize, rightVectorImpl.mSize);
 		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
-			LengthArgument leftLengthArg(mHeight, 1);
-			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			LengthArgument leftLengthArg(mSize, 1);
+			LengthArgument rightLengthArg(rightVectorImpl.mSize, 1);
 			OperationArgument operationArg('+', leftLengthArg, rightLengthArg);
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 
-		Impl resultVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl[row] = convertNegativeZero(mEntries[row] + rightVectorImpl[row]);
+		Impl resultVectorImpl(mSize);
+		for (size_t row = 0; row < mSize; row++) {
+			resultVectorImpl[row] = epsilonTest(mEntries[row] + rightVectorImpl[row]);
 		}
 		swap(resultVectorImpl);
 		return *this;
 	}
 	Vectorr::Impl& Vectorr::Impl::operator-=(const Vectorr::Impl& rightVectorImpl)\
 	{
-		int exceptNum = ExceptionHandlerr::checkHeight(mHeight, rightVectorImpl.mHeight);
+		int exceptNum = ExceptionHandlerr::checkHeight(mSize, rightVectorImpl.mSize);
 		if (exceptNum > static_cast<int>(OperationState::NoExcept)) {
-			LengthArgument leftLengthArg(mHeight, 1);
-			LengthArgument rightLengthArg(rightVectorImpl.mHeight, 1);
+			LengthArgument leftLengthArg(mSize, 1);
+			LengthArgument rightLengthArg(rightVectorImpl.mSize, 1);
 			OperationArgument operationArg('-', leftLengthArg, rightLengthArg);
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException, exceptNum);
 			handler.addArgument(operationArg);
 			handler.handleException();
 		}
 
-		Impl resultVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl[row] = convertNegativeZero(mEntries[row] - rightVectorImpl[row]);
+		Impl resultVectorImpl(mSize);
+		for (size_t row = 0; row < mSize; row++) {
+			resultVectorImpl[row] = epsilonTest(mEntries[row] - rightVectorImpl[row]);
 		}
 		swap(resultVectorImpl);
 		return *this;
 	}
 	Vectorr::Impl& Vectorr::Impl::operator*=(const double multiplier)
 	{
-		for (size_t row = 0; row < mHeight; row++) {
-			mEntries[row] = convertNegativeZero(multiplier * mEntries[row]);
+		for (size_t row = 0; row < mSize; row++) {
+			mEntries[row] = epsilonTest(multiplier * mEntries[row]);
 		}
 		return *this;
 	}
 	Vectorr::Impl& Vectorr::Impl::operator/=(const double divisor)
 	{
-		if (convertNegativeZero(divisor) == 0.0) {
+		if (epsilonTest(divisor) == 0.0) {
 			ExceptionHandlerr handler(ExceptionState::ArithmeticException,
 				static_cast<int>(OperationState::DivideByZero));
 			handler.handleException();
 		}
 
-		Impl resultVectorImpl(static_cast<int>(mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
-			resultVectorImpl[row] = convertNegativeZero(mEntries[row] / divisor);
+		Impl resultVectorImpl(mSize);
+		for (size_t row = 0; row < mSize; row++) {
+			resultVectorImpl[row] = epsilonTest(mEntries[row] / divisor);
 		}
 		swap(resultVectorImpl);
 		return *this;
@@ -1048,12 +1061,12 @@ namespace linalg {
 
 	Vectorr::Impl& Vectorr::Impl::operator|=(const Vectorr::Impl& lowerVectorImpl)
 	{
-		Impl appendedVectorImpl(static_cast<int>(mHeight + lowerVectorImpl.mHeight));
-		for (size_t row = 0; row < mHeight; row++) {
+		Impl appendedVectorImpl(mSize + lowerVectorImpl.mSize);
+		for (size_t row = 0; row < mSize; row++) {
 			appendedVectorImpl[row] = mEntries[row];
 		}
-		for (size_t row = mHeight; row < mHeight + lowerVectorImpl.mHeight; row++) {
-			appendedVectorImpl[row] = lowerVectorImpl[row - mHeight];
+		for (size_t row = mSize; row < mSize + lowerVectorImpl.mSize; row++) {
+			appendedVectorImpl[row] = lowerVectorImpl[row - mSize];
 		}
 		swap(appendedVectorImpl);
 		return *this;
@@ -1106,10 +1119,10 @@ namespace linalg {
 
 	bool Vectorr::Impl::operator==(const Vectorr::Impl& rightVectorImpl) const
 	{
-		if (mHeight != rightVectorImpl.mHeight) {
+		if (mSize != rightVectorImpl.mSize) {
 			return false;
 		}
-		for (size_t row = 0; row < mHeight; row++) {
+		for (size_t row = 0; row < mSize; row++) {
 			if (mEntries[row] != rightVectorImpl[row]) {
 				return false;
 			}
@@ -1121,21 +1134,12 @@ namespace linalg {
 		return !(*this == rightVectorImpl);
 	}
 
-	const size_t Vectorr::Impl::height() const
-	{
-		return mHeight;
-	}
-	const size_t Vectorr::Impl::size() const
-	{
-		return mHeight;
-	}
-
 	const std::string Vectorr::Impl::str() const
 	{
 		std::ostringstream parser;
 		parser.precision(2);
-		std::string vectorString = "(" + std::to_string(mHeight) + " row Vector)\n";
-		for (size_t row = 0; row < mHeight; row++) {
+		std::string vectorString = "(" + std::to_string(mSize) + " row Vector)\n";
+		for (size_t row = 0; row < mSize; row++) {
 			if (mEntries[row] >= 0.0) {
 				parser << " ";
 			}

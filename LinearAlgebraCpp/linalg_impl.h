@@ -17,24 +17,28 @@ namespace linalg {
 	public:
 		virtual ~Impl() = default;
 
-		virtual const size_t size() const = 0;
+		const size_t size() const;
 
 		virtual const std::string str() const = 0;
 	protected:
-		Impl() = default;
+		Impl(const int size = 1);
 
-		static const double convertNegativeZero(const double value);
+		static const double epsilonTest(const double value);
+
+		void size(size_t size);
+
+		size_t mSize;
 	};
 
 	class Matrixx::Impl : public Tensorr::Impl {
 		friend class Roww::Impl;
 		friend class Vectorr::Impl;
 	public:
-		Impl(const int height = 1, const int width = 1);
+		Impl(const size_t height = 1, const size_t width = 1);
 		Impl(const Roww::Impl& copyRowImpl);
 		Impl(const Vectorr::Impl& copyVectorImpl);
 		virtual ~Impl() = default;
-		void init(const int height = 1, const int width = 1); // throws std::length_error
+		void init(const size_t height = 1, const size_t width = 1); // throws std::length_error
 
 		void reduce(); // == toEchelonForm + toReducedEchelonForm
 		void toEchelonForm();
@@ -47,7 +51,7 @@ namespace linalg {
 		Impl inverse(); // throws std::logic_error, get inverse matrix of square matrix
 		Impl transpose() const;
 
-		static Impl identity(const int length); // throws std::length_error, create elementary matrix(or unit matrix)
+		static Impl identity(const size_t length); // throws std::length_error, create elementary matrix(or unit matrix)
 
 		// Traditional array index reference method (only positive index)
 		const Roww& operator[](const size_t row) const; // throws std::out_of_range
@@ -105,7 +109,6 @@ namespace linalg {
 
 		const size_t height() const;
 		const size_t width() const;
-		virtual const size_t size() const override;
 
 		virtual const std::string str() const override;
 	private:
@@ -134,10 +137,10 @@ namespace linalg {
 	class Roww::Impl : public Tensorr::Impl {
 		friend class Matrixx::Impl;
 	public:
-		Impl(const int size = 1);
+		Impl(const size_t size = 1);
 		//Roww(Roww&& moveRow) noexcept;
 		virtual ~Impl() = default;
-		void init(const int size = 1);
+		void init(const size_t size = 1);
 
 		// Traditional array index reference
 		const double& operator[](const size_t col) const; // throws std::out_of_range
@@ -176,14 +179,10 @@ namespace linalg {
 		bool operator==(const Impl& rightRowImpl) const;
 		bool operator!=(const Impl& rightRowImpl) const;
 
-		const size_t width() const;
-		virtual const size_t size() const override;
-
 		virtual const std::string str() const override;
 	private:
 		void swap(Impl& rightRowImpl) noexcept;
 
-		size_t mWidth;
 		std::vector<double> mEntries;
 	};
 
@@ -194,10 +193,10 @@ namespace linalg {
 	class Vectorr::Impl : public Tensorr::Impl {
 		friend class Matrixx::Impl;
 	public:
-		Impl(const int size = 1);
+		Impl(const size_t size = 1);
 		//Vectorr(Vectorr&& moveVector) noexcept;
 		virtual ~Impl() = default;
-		void init(const int size = 1);
+		void init(const size_t size = 1);
 
 		// Traditional array index reference method (only positive index)
 		const double& operator[](const size_t row) const; // throws std::out_of_range
@@ -236,14 +235,10 @@ namespace linalg {
 		bool operator==(const Impl& rightVectorImpl) const;
 		bool operator!=(const Impl& rightVectorImpl) const;
 
-		const size_t height() const;
-		virtual const size_t size() const override;
-
 		virtual const std::string str() const override;
 	private:
 		void swap(Impl& rightVectorImpl) noexcept;
 
-		size_t mHeight;
 		std::vector<double> mEntries;
 	};
 }

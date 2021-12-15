@@ -40,8 +40,8 @@ namespace linalg {
 		void addArgument(ExceptionArgument& exceptionArg); // (recommended) Add argument in printing order
 		void handleException(); // throw exception derived from std::logic_error
 
-		static const int checkValidHeight(const int height); // Check valid height on height allocation
-		static const int checkValidWidth(const int width); // Check valid width on width allocation
+		static const int checkValidHeight(const size_t height); // Check valid height on height allocation
+		static const int checkValidWidth(const size_t width); // Check valid width on width allocation
 
 		static const int checkRowIndex(const int row, const size_t height); // Check row index on row reference
 		static const int checkRowIndex(const size_t row, const size_t height);

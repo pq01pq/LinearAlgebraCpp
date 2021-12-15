@@ -2,7 +2,7 @@
 
 namespace linalg {
 
-	Matrixx::Matrixx(const int height, const int width)
+	Matrixx::Matrixx(const size_t height, const size_t width)
 		: Tensorr(), impl(std::make_unique<Impl>(height, width))
 	{
 	}
@@ -26,7 +26,7 @@ namespace linalg {
 		: Tensorr(), impl(std::make_unique<Impl>(matrixImpl))
 	{
 	}
-	void Matrixx::init(const int height, const int width)
+	void Matrixx::init(const size_t height, const size_t width)
 	{		
 		impl->init(height, width);
 	}
@@ -72,7 +72,7 @@ namespace linalg {
 		}
 	}
 
-	Matrixx Matrixx::identity(const int length)
+	Matrixx Matrixx::identity(const size_t length)
 	{
 		return Impl::identity(length);
 	}
@@ -306,7 +306,7 @@ namespace linalg {
 
 
 
-	Roww::Roww(const int size)
+	Roww::Roww(const size_t size)
 		: Tensorr(), impl(std::make_unique<Impl>(size))
 	{
 	}
@@ -322,7 +322,7 @@ namespace linalg {
 	{
 		swap(*this, moveRow);
 	}*/
-	void Roww::init(const int size)
+	void Roww::init(const size_t size)
 	{
 		impl->init(size);
 	}
@@ -457,10 +457,6 @@ namespace linalg {
 		return outputStream;
 	}
 
-	const size_t Roww::width() const
-	{
-		return impl->width();
-	}
 	const size_t Roww::size() const
 	{
 		return impl->size();
@@ -475,7 +471,7 @@ namespace linalg {
 
 
 
-	Vectorr::Vectorr(const int size)
+	Vectorr::Vectorr(const size_t size)
 		: Tensorr(), impl(std::make_unique<Impl>(size))
 	{
 	}
@@ -491,7 +487,7 @@ namespace linalg {
 	{
 		swap(*this, moveVector);
 	}*/
-	void Vectorr::init(const int size)
+	void Vectorr::init(const size_t size)
 	{
 		impl->init(size);
 	}
@@ -626,10 +622,6 @@ namespace linalg {
 		return outputStream;
 	}
 
-	const size_t Vectorr::height() const
-	{
-		return impl->height();
-	}
 	const size_t Vectorr::size() const
 	{
 		return impl->size();

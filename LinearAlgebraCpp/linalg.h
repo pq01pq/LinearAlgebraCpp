@@ -43,13 +43,13 @@ namespace linalg {
 		friend class Roww;
 		friend class Vectorr;
 	public:
-		Matrixx(const int height = 1, const int width = 1);
+		Matrixx(const size_t height = 1, const size_t width = 1);
 		Matrixx(const Matrixx& copyMatrix);
 		//Matrixx(Matrixx&& moveMatrix) noexcept;
 		explicit Matrixx(const Roww& copyRow);
 		explicit Matrixx(const Vectorr& copyVector);
 		virtual ~Matrixx() = default;
-		void init(const int height = 1, const int width = 1); // throws std::length_error
+		void init(const size_t height = 1, const size_t width = 1); // throws std::length_error
 
 		void reduce(); // == toEchelonForm + toReducedEchelonForm
 		void toEchelonForm();
@@ -62,7 +62,7 @@ namespace linalg {
 		Matrixx inverse(); // throws std::logic_error, get inverse matrix of square matrix
 		Matrixx transpose(const bool inplace = false);
 
-		static Matrixx identity(const int length); // throws std::length_error, create elementary matrix(or unit matrix)
+		static Matrixx identity(const size_t length); // throws std::length_error, create elementary matrix(or unit matrix)
 		
 		// Traditional array index reference method (only positive index)
 		const Roww& operator[](const size_t row) const; // throws std::out_of_range
@@ -147,11 +147,11 @@ namespace linalg {
 	class Roww : public Tensorr, public Allocatablee {
 		friend class Matrixx;
 	public:
-		explicit Roww(const int size = 1);
+		explicit Roww(const size_t size = 1);
 		Roww(const Roww& copyRow);
 		//Roww(Roww&& moveRow) noexcept;
 		virtual ~Roww() = default;
-		void init(const int size = 1);
+		void init(const size_t size = 1);
 
 		// Traditional array index reference method (only positive index)
 		const double& operator[](const size_t col) const; // throws std::out_of_range
@@ -194,7 +194,6 @@ namespace linalg {
 		friend bool operator==(const Roww& leftRow, const Roww& rightRow);
 		friend bool operator!=(const Roww& leftRow, const Roww& rightRow);
 
-		const size_t width() const;
 		virtual const size_t size() const;
 
 		virtual const std::string str() const override;
@@ -215,11 +214,11 @@ namespace linalg {
 	class Vectorr : public Tensorr, public Allocatablee {
 		friend class Matrixx;
 	public:
-		explicit Vectorr(const int size = 1);
+		explicit Vectorr(const size_t size = 1);
 		Vectorr(const Vectorr& copyVector);
 		//Vectorr(Vectorr&& moveVector) noexcept;
 		virtual ~Vectorr() = default;
-		void init(const int size = 1);
+		void init(const size_t size = 1);
 
 		// Traditional array index reference method (only positive index)
 		const double& operator[](const size_t row) const; // throws std::out_of_range
@@ -265,7 +264,6 @@ namespace linalg {
 		friend bool operator==(const Vectorr& leftVector, const Vectorr& rightVector);
 		friend bool operator!=(const Vectorr& leftVector, const Vectorr& rightVector);
 
-		const size_t height() const;
 		virtual const size_t size() const;
 
 		virtual const std::string str() const override;

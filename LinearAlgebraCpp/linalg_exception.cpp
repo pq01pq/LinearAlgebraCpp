@@ -113,16 +113,16 @@ namespace linalg {
 		return "Logic Error";
 	}
 
-	const int ExceptionHandlerr::checkValidHeight(const int height)
+	const int ExceptionHandlerr::checkValidHeight(const size_t height)
 	{
-		if (height < 1) {
+		if (height < 1 || height > std::numeric_limits<int>::max()) {
 			return static_cast<int>(LengthState::InvalidHeight);
 		}
 		return static_cast<int>(LengthState::NoExcept);
 	}
-	const int ExceptionHandlerr::checkValidWidth(const int width)
+	const int ExceptionHandlerr::checkValidWidth(const size_t width)
 	{
-		if (width < 1) {
+		if (width < 1 || width > std::numeric_limits<int>::max()) {
 			return static_cast<int>(LengthState::InvalidWidth);
 		}
 		return static_cast<int>(LengthState::NoExcept);
